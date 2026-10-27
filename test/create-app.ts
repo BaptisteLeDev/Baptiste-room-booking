@@ -19,6 +19,12 @@ export async function createTestApp(): Promise<INestApplication<App>> {
 
 export async function resetDatabase(app: INestApplication<App>): Promise<void> {
   const dataSource = app.get(DataSource);
+  const [{ current_database }] = await dataSource.query<
+    { current_database: string }[]
+  >('SELECT current_database()');
+  if (current_database !== 'resa_db_test') {
+    throw new Error(`refusing to truncate database "${current_database}"`);
+  }
   await dataSource.query(
     'TRUNCATE payments, reservations, availabilities, rooms RESTART IDENTITY CASCADE',
   );
