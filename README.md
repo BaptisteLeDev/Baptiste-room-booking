@@ -60,6 +60,37 @@ Connection env vars, read by `src/database/data-source.ts` (defaults in brackets
 
 The e2e global setup (`test/global-setup.ts`) runs migrations on the test DB `resa_db_test` before `pnpm test:e2e`. Its creation comes from `docker/init-test-db.sql`, which runs only when the Postgres volume is first created. To recreate it: `docker compose down -v` (deletes local DB data), then `pnpm db:up`.
 
+## Auth
+
+JWT bearer. `JWT_SECRET` obligatoire (l'app refuse de démarrer sans). Jeton valable 1 h.
+
+```bash
+$ curl -X POST http://localhost:8080/api/auth/login \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"ada@example.com","password":"..."}'
+# puis sur chaque route protégée :
+$ curl http://localhost:8080/api/auth/me -H 'Authorization: Bearer <accessToken>'
+```
+
+Routes publiques (sans jeton) :
+
+- `GET /api`
+- `POST /api/auth/register`, `POST /api/auth/login`
+- `GET /api/rooms`, `GET /api/rooms/:roomId`, `GET /api/rooms/:roomId/availability`
+
+Tout le reste répond `401` sans jeton valide. `POST /api/auth/logout` révoque le jeton
+en mémoire : la liste est perdue au redémarrage et n'est pas partagée entre instances.
+
+## Brancher le front
+
+Dans `../frontend/apps/frontend/.env.local` :
+
+```bash
+API_URL=http://localhost:8080/api
+```
+
+Sans cette variable, le front utilise le mock Prism.
+
 ## Compile and run the project
 
 ```bash
