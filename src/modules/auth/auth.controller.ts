@@ -11,15 +11,17 @@ import type { AuthResponse, User } from '../../contract.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { AuthService } from './auth.service.js';
 import { authResponseFixture } from './fixtures/auth-response.fixture.js';
-import { userFixture } from './fixtures/user.fixture.js';
 
 @Controller('auth')
 export class AuthController {
+  constructor(private readonly auth: AuthService) {}
+
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  register(@Body() _body: RegisterDto): User {
-    return userFixture;
+  register(@Body() body: RegisterDto): Promise<User> {
+    return this.auth.register(body);
   }
 
   @Post('login')
@@ -33,8 +35,8 @@ export class AuthController {
   logout(): void {}
 
   @Get('me')
-  getCurrentUser(): User {
-    return userFixture;
+  getCurrentUser(): Promise<User> {
+    return this.auth.me();
   }
 
   @Patch('password')
