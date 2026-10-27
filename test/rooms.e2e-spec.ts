@@ -139,6 +139,29 @@ describe('Rooms routes (e2e)', () => {
     expect(json<Room>(fetched).status).toBe('INACTIVE');
   });
 
+  it('PATCH /api/rooms/:roomId with one field keeps the others', async () => {
+    const created = await createRoom();
+
+    const patched = await http()
+      .patch(`/api/rooms/${created.id}`)
+      .send({ capacity: 30 })
+      .expect(200);
+    expect(json<Room>(patched)).toMatchObject({
+      capacity: 30,
+      name: created.name,
+      location: created.location,
+      pricePerHour: created.pricePerHour,
+    });
+
+    const fetched = await http().get(`/api/rooms/${created.id}`).expect(200);
+    expect(json<Room>(fetched)).toMatchObject({
+      capacity: 30,
+      name: created.name,
+      location: created.location,
+      pricePerHour: created.pricePerHour,
+    });
+  });
+
   it('DELETE /api/rooms/:roomId -> 204 then GET -> 404', async () => {
     const created = await createRoom();
 

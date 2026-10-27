@@ -109,7 +109,12 @@ export class RoomsService {
 
   async update(id: string, body: RoomUpdateRequest): Promise<Room> {
     const room = await this.load(id);
-    Object.assign(room, body);
+    Object.assign(
+      room,
+      Object.fromEntries(
+        Object.entries(body).filter(([, v]) => v !== undefined),
+      ),
+    );
     return toRoom(await this.rooms.save(room));
   }
 
