@@ -23,6 +23,7 @@ export const dataSourceOptions: DataSourceOptions = {
   ],
   migrations: [InitSchema1793106343582, SeedDemoUser1793106400000],
   synchronize: false,
+  logging: process.env.DB_LOGGING === 'true',
 };
 
 export default new DataSource(dataSourceOptions);
