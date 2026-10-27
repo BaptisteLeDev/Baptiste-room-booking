@@ -187,6 +187,32 @@ describe('Reservations routes (e2e)', () => {
     expect(await countReservations()).toBe(0);
   });
 
+  it('POST waits while another transaction holds the room row lock', async () => {
+    const runner = app.get(DataSource).createQueryRunner();
+    await runner.startTransaction();
+    try {
+      // NO KEY UPDATE: the FK key-share lock of an insert would not wait on it
+      await runner.query(
+        'SELECT id FROM rooms WHERE id = $1 FOR NO KEY UPDATE',
+        [roomId],
+      );
+      const pending = http()
+        .post('/api/reservations')
+        .send(payload())
+        .then((r) => r);
+      const early = await Promise.race([
+        pending,
+        new Promise<'blocked'>((r) => setTimeout(() => r('blocked'), 300)),
+      ]);
+      expect(early).toBe('blocked');
+      await runner.commitTransaction();
+      expect((await pending).status).toBe(201);
+    } finally {
+      if (runner.isTransactionActive) await runner.rollbackTransaction();
+      await runner.release();
+    }
+  });
+
   it('POST participants above capacity -> 400', () => {
     return http()
       .post('/api/reservations')

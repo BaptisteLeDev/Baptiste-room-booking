@@ -10,6 +10,7 @@ import type {
 import {
   Reservation,
   type ReservationSnapshot,
+  type RoomTerms,
 } from '../domain/reservation.js';
 import {
   RESERVATION_REPOSITORY,
@@ -40,10 +41,10 @@ export class ReservationsService {
     userId: string,
     req: ReservationCreateRequest,
   ): Promise<ReservationSnapshot> {
+    const room = await this.catalog.find(req.roomId);
+    if (!room) throw notFound();
+    const slot = TimeSlot.of(req.startAt, req.endAt);
     return this.repo.exclusive(req.roomId, async (tx) => {
-      const room = await this.catalog.find(req.roomId);
-      if (!room) throw notFound();
-      const slot = TimeSlot.of(req.startAt, req.endAt);
       await this.assertFree(tx, req.roomId, slot);
       const r = Reservation.request({
         id: randomUUID(),
@@ -82,22 +83,24 @@ export class ReservationsService {
     req: ReservationUpdateRequest,
   ): Promise<ReservationSnapshot> {
     const r = await this.load(id);
+    const room = await this.catalog.find(r.roomId);
+    if (!room) throw notFound();
     const changesSlot = req.startAt !== undefined || req.endAt !== undefined;
-    if (!changesSlot) return this.amend(this.repo, r, req);
+    if (!changesSlot) return this.amend(this.repo, r, room, req);
+    // catalog is not tx-bound: read it before the lock to keep one connection
     return this.repo.exclusive(r.roomId, async (tx) => {
       const fresh = await tx.get(id);
       if (!fresh) throw notFound();
-      return this.amend(tx, fresh, req);
+      return this.amend(tx, fresh, room, req);
     });
   }
 
   private async amend(
     repo: ReservationRepository,
     r: Reservation,
+    room: RoomTerms,
     req: ReservationUpdateRequest,
   ): Promise<ReservationSnapshot> {
-    const room = await this.catalog.find(r.roomId);
-    if (!room) throw notFound();
     const cur = r.toSnapshot();
     const slot =
       req.startAt !== undefined || req.endAt !== undefined
