@@ -1,0 +1,17 @@
+export type {
+  AvailabilitySlot,
+  AvailabilityUpdateRequest,
+  ChangePasswordRequest,
+  Currency,
+  LoginRequest,
+  PaymentCreateRequest,
+  RegisterRequest,
+  ReservationCreateRequest,
+  ReservationRejectRequest,
+  ReservationUpdateRequest,
+  RoomCreateRequest,
+  RoomStatus,
+  RoomUpdateRequest,
+  UserRole,
+  UserUpdateRequest,
+} from './contract/generated/types.gen.js';
