@@ -8,5 +8,6 @@ export default defineConfig({
     include: ['**/*.e2e-spec.ts'],
     fileParallelism: false,
     env: { DB_NAME: 'resa_db_test' },
+    globalSetup: ['./test/global-setup.ts'],
   },
 });

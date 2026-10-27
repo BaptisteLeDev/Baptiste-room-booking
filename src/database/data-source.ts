@@ -1,4 +1,11 @@
 import { DataSource, type DataSourceOptions } from 'typeorm';
+import { UserEntity } from '../modules/users/infra/user.entity.js';
+import { RoomEntity } from '../modules/rooms/infra/room.entity.js';
+import { AvailabilityEntity } from '../modules/rooms/infra/availability.entity.js';
+import { ReservationEntity } from '../modules/reservations/infra/reservation.entity.js';
+import { PaymentEntity } from '../modules/payments/infra/payment.entity.js';
+import { InitSchema1793106343582 } from './migrations/1793106343582-InitSchema.js';
+import { SeedDemoUser1793106400000 } from './migrations/1793106400000-SeedDemoUser.js';
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
@@ -7,8 +14,14 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USER ?? 'resa_user',
   password: process.env.DB_PASSWORD ?? 'resa_password',
   database: process.env.DB_NAME ?? 'resa_db',
-  entities: [],
-  migrations: [],
+  entities: [
+    UserEntity,
+    RoomEntity,
+    AvailabilityEntity,
+    ReservationEntity,
+    PaymentEntity,
+  ],
+  migrations: [InitSchema1793106343582, SeedDemoUser1793106400000],
   synchronize: false,
 };
 
