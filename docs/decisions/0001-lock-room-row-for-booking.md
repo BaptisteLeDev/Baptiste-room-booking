@@ -23,7 +23,7 @@ La contrainte d'exclusion `no_overlap_active` reste en dernier filet : une
 violation (SQLSTATE `23P01`) remonte en 409 `SLOT_UNAVAILABLE`.
 
 Les conditions de la salle (capacité, prix) sont lues avant de prendre le verrou.
-Les lire via le catalogue hors transaction, à l'intérieur de la transaction,
+Les lire via le catalogue à l'intérieur de la transaction
 demanderait une 2e connexion du pool (max 10) : à partir d'environ 10 réservations
 simultanées sur une même Salle, le pool serait épuisé et l'application bloquerait.
 Compromis accepté : une modification de prix survenant à quelques millisecondes

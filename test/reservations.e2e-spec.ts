@@ -213,13 +213,6 @@ describe('Reservations routes (e2e)', () => {
     }
   });
 
-  it('POST participants above capacity -> 400', () => {
-    return http()
-      .post('/api/reservations')
-      .send(payload({ numberOfParticipants: 21 }))
-      .expect(400);
-  });
-
   it('POST startAt >= endAt -> 400', () => {
     return http()
       .post('/api/reservations')

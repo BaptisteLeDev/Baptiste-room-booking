@@ -99,7 +99,6 @@ describe('N+1 vs query builder join (e2e)', () => {
 
     expect(counter.count).toBe(5);
     expect(lazy).toHaveLength(2);
-    lazy.sort((a, b) => a.id.localeCompare(b.id));
     expect(lazy.every((r) => r.availabilities === 2)).toBe(true);
   });
 
@@ -119,7 +118,7 @@ describe('N+1 vs query builder join (e2e)', () => {
     expect(rooms.every((r) => r.owner.id === userFixture.id)).toBe(true);
   });
 
-  it('lazy and join return the same rooms and availability counts', async () => {
+  it('lazy and join return the same rooms, availability counts and owners', async () => {
     const lazyRooms = await countingDataSource.getRepository(RoomEntity).find({
       where: { capacity: MoreThanOrEqual(10) },
     });
@@ -129,17 +128,24 @@ describe('N+1 vs query builder join (e2e)', () => {
         availabilities: await countingDataSource
           .getRepository(AvailabilityEntity)
           .countBy({ roomId: room.id }),
+        owner: (
+          await countingDataSource
+            .getRepository(UserEntity)
+            .findOneBy({ id: room.ownerId })
+        )?.id,
       })),
     );
 
     const joined = await countingDataSource
       .createQueryBuilder(RoomEntity, 'room')
       .leftJoinAndSelect('room.availabilities', 'availability')
+      .leftJoinAndSelect('room.owner', 'owner')
       .where('room.capacity >= :minCapacity', { minCapacity: 10 })
       .getMany();
     const eager = joined.map((room) => ({
       id: room.id,
       availabilities: room.availabilities.length,
+      owner: room.owner?.id,
     }));
 
     const byId = (a: { id: string }, b: { id: string }) =>
