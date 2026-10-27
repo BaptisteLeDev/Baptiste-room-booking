@@ -31,12 +31,12 @@ Toute autre transition : 409 `RESERVATION_STATUS_CONFLICT`.
 ## Frontières
 
 - Possède les réservations.
-- Lit les conditions d'une salle via le port `RoomCatalog` (`domain/room-catalog.ts`). Adaptateur actuel : `FixtureRoomCatalog`, une seule salle, à remplacer quand le domaine Rooms existera.
+- Lit les conditions d'une salle via le port `RoomCatalog` (`domain/room-catalog.ts`). Adaptateur : `TypeOrmRoomCatalog`, lit la table `rooms`.
 - Utilisateur courant : constante issue de `userFixture` dans le contrôleur, en attendant un guard d'authentification.
 
 ## Provenance des données
 
-Dépôt en mémoire (`InMemoryReservationRepository`) : tout est perdu au redémarrage. Port : `RESERVATION_REPOSITORY`.
+PostgreSQL, table `reservations`, via `TypeOrmReservationRepository` (`ReservationEntity`). Contrainte d'exclusion `no_overlap_active` : un conflit de créneau remonte en 409 `SLOT_UNAVAILABLE`. Port : `RESERVATION_REPOSITORY`. `InMemoryReservationRepository` reste pour les tests unitaires.
 
 ## Invariants
 
