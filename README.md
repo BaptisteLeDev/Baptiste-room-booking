@@ -30,6 +30,35 @@
 $ pnpm install
 ```
 
+## Database
+
+PostgreSQL 16 via `docker-compose.yml`. Schema only through migrations (`synchronize` is off).
+
+```bash
+# start postgres (port 5432)
+$ pnpm db:up
+
+# apply pending migrations
+$ pnpm db:migrate
+
+# generate a migration from entity changes (needs the DB running)
+$ pnpm db:generate src/database/migrations/Name
+# then add the generated class to `migrations` in src/database/data-source.ts
+
+# revert the last migration
+$ pnpm db:revert
+```
+
+Connection env vars, read by `src/database/data-source.ts` (defaults in brackets):
+
+- `DB_HOST` [`localhost`]
+- `DB_PORT` [`5432`]
+- `DB_USER` [`resa_user`]
+- `DB_PASSWORD` [`resa_password`]
+- `DB_NAME` [`resa_db`]
+
+The e2e global setup (`test/global-setup.ts`) runs migrations on the test DB `resa_db_test` before `pnpm test:e2e`. Its creation comes from `docker/init-test-db.sql`, which runs only when the Postgres volume is first created. To recreate it: `docker compose down -v`, then `pnpm db:up`.
+
 ## Compile and run the project
 
 ```bash
