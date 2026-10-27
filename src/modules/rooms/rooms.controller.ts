@@ -13,6 +13,7 @@ import {
   Query,
 } from '@nestjs/common';
 import type { AvailabilitySlot, PaginatedRooms, Room } from '../../contract.js';
+import { Public } from '../auth/public.decorator.js';
 import { CreateRoomDto } from './dto/create-room.dto.js';
 import { GetRoomAvailabilityQueryDto } from './dto/get-room-availability-query.dto.js';
 import { ListRoomsQueryDto } from './dto/list-rooms-query.dto.js';
@@ -24,6 +25,7 @@ import { RoomsService } from './rooms.service.js';
 export class RoomsController {
   constructor(private readonly rooms: RoomsService) {}
 
+  @Public()
   @Get()
   listRooms(@Query() query: ListRoomsQueryDto): Promise<PaginatedRooms> {
     return this.rooms.list(query);
@@ -35,6 +37,7 @@ export class RoomsController {
     return this.rooms.create(body);
   }
 
+  @Public()
   @Get(':roomId')
   getRoom(@Param('roomId', ParseUUIDPipe) roomId: string): Promise<Room> {
     return this.rooms.get(roomId);
@@ -54,6 +57,7 @@ export class RoomsController {
     return this.rooms.delete(roomId);
   }
 
+  @Public()
   @Get(':roomId/availability')
   getRoomAvailability(
     @Param('roomId', ParseUUIDPipe) roomId: string,
