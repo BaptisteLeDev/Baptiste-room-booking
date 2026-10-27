@@ -197,6 +197,17 @@ describe('UpdateAvailabilityDto', () => {
     expect(props(errors)).toContain('slots.0.available');
   });
 
+  it.each([
+    ['endTime before startTime', '14:00', '09:00'],
+    ['endTime equal to startTime', '09:00', '09:00'],
+  ])('rejects slot with %s', async (_label, startTime, endTime) => {
+    const errors = await check(UpdateAvailabilityDto, {
+      ...valid,
+      slots: [{ startTime, endTime, available: true }],
+    });
+    expect(props(errors)).toContain('slots.0.endTime');
+  });
+
   it('rejects non-boolean slot available', async () => {
     const errors = await check(UpdateAvailabilityDto, {
       ...valid,

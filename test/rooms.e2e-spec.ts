@@ -195,6 +195,21 @@ describe('Rooms routes (e2e)', () => {
     ]);
   });
 
+  it.each([
+    ['endTime before startTime', '14:00', '09:00'],
+    ['endTime equal to startTime', '09:00', '09:00'],
+  ])('PUT availability with %s -> 400', async (_label, startTime, endTime) => {
+    const created = await createRoom();
+    const res = await http()
+      .put(`/api/rooms/${created.id}/availability`)
+      .send({
+        date: '2026-11-02',
+        slots: [{ startTime, endTime, available: true }],
+      })
+      .expect(400);
+    expect(json<ApiError>(res).code).toBe('VALIDATION_ERROR');
+  });
+
   it('PUT availability with unknown room -> 404', async () => {
     const res = await http()
       .put(`/api/rooms/${UNKNOWN_ID}/availability`)
