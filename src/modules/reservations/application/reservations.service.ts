@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DomainError } from '../../../common/domain-error.js';
-import { MESSAGES } from '../../../common/http/api-exception.filter.js';
+import { notFound } from '../../../common/not-found.js';
 import type {
   ReservationCreateRequest,
   ReservationStatus,
@@ -19,8 +19,6 @@ import { ROOM_CATALOG, type RoomCatalog } from '../domain/room-catalog.js';
 import { TimeSlot } from '../domain/time-slot.js';
 
 const CURRENCY = 'EUR';
-
-const notFound = () => new DomainError('not_found', 'NOT_FOUND', MESSAGES[404]);
 
 export type ReservationListQuery = {
   status?: ReservationStatus;

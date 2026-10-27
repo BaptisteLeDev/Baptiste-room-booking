@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { hasPgCode } from '../../common/database/pg-error.js';
 import { DomainError } from '../../common/domain-error.js';
-import { MESSAGES } from '../../common/http/api-exception.filter.js';
+import { notFound } from '../../common/not-found.js';
 import type {
   AvailabilitySlot,
   AvailabilityUpdateRequest,
@@ -17,8 +18,6 @@ import { ListRoomsQueryDto } from './dto/list-rooms-query.dto.js';
 import { RoomEntity } from './infra/room.entity.js';
 
 const FK_VIOLATION = '23503';
-
-const notFound = () => new DomainError('not_found', 'NOT_FOUND', MESSAGES[404]);
 
 const AVAILABILITY_SQL = `
 SELECT to_char(a.start_time AT TIME ZONE 'Europe/Paris', 'HH24:MI') AS "startTime",
@@ -123,10 +122,7 @@ export class RoomsService {
       const { affected } = await this.rooms.delete(id);
       if (!affected) throw notFound();
     } catch (e) {
-      if (
-        e instanceof QueryFailedError &&
-        (e.driverError as { code?: string }).code === FK_VIOLATION
-      ) {
+      if (hasPgCode(e, FK_VIOLATION)) {
         throw new DomainError(
           'conflict',
           'ROOM_HAS_RESERVATIONS',

@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
+import { hasPgCode } from '../../common/database/pg-error.js';
 import { DomainError } from '../../common/domain-error.js';
-import { MESSAGES } from '../../common/http/api-exception.filter.js';
+import { notFound } from '../../common/not-found.js';
 import type { RegisterRequest, User } from '../../contract.js';
 import { UserEntity } from '../users/infra/user.entity.js';
 import { userFixture } from './fixtures/user.fixture.js';
@@ -50,10 +51,7 @@ export class AuthService {
       );
       return toUser(saved);
     } catch (e) {
-      if (
-        e instanceof QueryFailedError &&
-        (e.driverError as { code?: string }).code === UNIQUE_VIOLATION
-      ) {
+      if (hasPgCode(e, UNIQUE_VIOLATION)) {
         throw emailUsed();
       }
       throw e;
@@ -63,7 +61,7 @@ export class AuthService {
   async me(): Promise<User> {
     // ponytail: until auth guard
     const user = await this.users.findOneBy({ id: userFixture.id });
-    if (!user) throw new DomainError('not_found', 'NOT_FOUND', MESSAGES[404]);
+    if (!user) throw notFound();
     return toUser(user);
   }
 }

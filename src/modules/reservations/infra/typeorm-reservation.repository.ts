@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
+import { hasPgCode } from '../../../common/database/pg-error.js';
 import { DomainError } from '../../../common/domain-error.js';
 import {
   Reservation,
@@ -58,10 +59,7 @@ export class TypeOrmReservationRepository implements ReservationRepository {
     try {
       await this.rows.save(fromSnapshot(r.toSnapshot()));
     } catch (e) {
-      if (
-        e instanceof QueryFailedError &&
-        (e.driverError as { code?: string }).code === EXCLUSION_VIOLATION
-      ) {
+      if (hasPgCode(e, EXCLUSION_VIOLATION)) {
         throw new DomainError(
           'conflict',
           'SLOT_UNAVAILABLE',
