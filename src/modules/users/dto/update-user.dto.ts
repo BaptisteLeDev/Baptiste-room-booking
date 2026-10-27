@@ -1,13 +1,14 @@
 import { IsEmail, IsIn, IsString, MaxLength } from 'class-validator';
+import { enumValues } from '../../../common/validation/enum-values.js';
 import { ValidateIfDefined } from '../../../common/validation/validate-if-defined.js';
 import { MinProperties } from '../../../common/validation/min-properties.js';
 import type { UserRole, UserUpdateRequest } from '../../../contract.js';
 
-const USER_ROLES = [
+const USER_ROLES = enumValues<UserRole>()([
   'CLIENT',
   'GESTIONNAIRE',
   'ADMINISTRATEUR',
-] as const satisfies readonly UserRole[];
+]);
 
 @MinProperties(1)
 export class UpdateUserDto implements UserUpdateRequest {

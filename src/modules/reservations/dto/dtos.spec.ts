@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { plainToInstance } from 'class-transformer';
 import { check, props } from '../../../common/validation/dto-test-helpers.js';
 import type {
   ReservationCreateRequest,
@@ -6,6 +7,7 @@ import type {
   ReservationUpdateRequest,
 } from '../../../contract.js';
 import { CreateReservationDto } from './create-reservation.dto.js';
+import { ListReservationsQueryDto } from './list-reservations-query.dto.js';
 import { RejectReservationDto } from './reject-reservation.dto.js';
 import { UpdateReservationDto } from './update-reservation.dto.js';
 
@@ -176,5 +178,22 @@ describe('RejectReservationDto', () => {
   it.each(['reason'])('rejects null %s', async (field) => {
     const errors = await check(RejectReservationDto, { [field]: null });
     expect(props(errors)).toContain(field);
+  });
+});
+
+describe('ListReservationsQueryDto', () => {
+  it('defaults page to 1 and pageSize to 20', () => {
+    const query = plainToInstance(ListReservationsQueryDto, {});
+    expect(query.page).toBe(1);
+    expect(query.pageSize).toBe(20);
+  });
+
+  it('keeps explicit page and pageSize', () => {
+    const query = plainToInstance(ListReservationsQueryDto, {
+      page: 3,
+      pageSize: 50,
+    });
+    expect(query.page).toBe(3);
+    expect(query.pageSize).toBe(50);
   });
 });

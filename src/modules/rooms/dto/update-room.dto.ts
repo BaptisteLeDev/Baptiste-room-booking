@@ -7,14 +7,12 @@ import {
   IsUrl,
   Min,
 } from 'class-validator';
+import { enumValues } from '../../../common/validation/enum-values.js';
 import { ValidateIfDefined } from '../../../common/validation/validate-if-defined.js';
 import { MinProperties } from '../../../common/validation/min-properties.js';
 import type { RoomStatus, RoomUpdateRequest } from '../../../contract.js';
 
-const ROOM_STATUSES = [
-  'ACTIVE',
-  'INACTIVE',
-] as const satisfies readonly RoomStatus[];
+const ROOM_STATUSES = enumValues<RoomStatus>()(['ACTIVE', 'INACTIVE']);
 
 @MinProperties(1)
 export class UpdateRoomDto implements RoomUpdateRequest {

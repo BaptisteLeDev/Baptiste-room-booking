@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { plainToInstance } from 'class-transformer';
 import { check, props } from '../../../common/validation/dto-test-helpers.js';
 import type {
   AvailabilityUpdateRequest,
@@ -6,6 +7,7 @@ import type {
   RoomUpdateRequest,
 } from '../../../contract.js';
 import { CreateRoomDto } from './create-room.dto.js';
+import { ListRoomsQueryDto } from './list-rooms-query.dto.js';
 import { UpdateAvailabilityDto } from './update-availability.dto.js';
 import { UpdateRoomDto } from './update-room.dto.js';
 
@@ -201,5 +203,47 @@ describe('UpdateAvailabilityDto', () => {
       slots: [{ startTime: '09:00', endTime: '12:30', available: 'yes' }],
     });
     expect(props(errors)).toContain('slots.0.available');
+  });
+});
+
+describe('ListRoomsQueryDto', () => {
+  it('accepts capacityMin equal to capacityMax (5/5)', async () => {
+    expect(
+      await check(ListRoomsQueryDto, { capacityMin: 5, capacityMax: 5 }),
+    ).toHaveLength(0);
+  });
+
+  it('accepts capacityMin below capacityMax (3/5)', async () => {
+    expect(
+      await check(ListRoomsQueryDto, { capacityMin: 3, capacityMax: 5 }),
+    ).toHaveLength(0);
+  });
+
+  it('accepts only capacityMin', async () => {
+    expect(await check(ListRoomsQueryDto, { capacityMin: 5 })).toHaveLength(0);
+  });
+
+  it('accepts only capacityMax', async () => {
+    expect(await check(ListRoomsQueryDto, { capacityMax: 3 })).toHaveLength(0);
+  });
+
+  it('rejects capacityMin above capacityMax (5/3)', async () => {
+    const errors = await check(ListRoomsQueryDto, {
+      capacityMin: 5,
+      capacityMax: 3,
+    });
+    expect(props(errors)).toContain('capacityMax');
+  });
+
+  it('defaults page to 1 and pageSize to 20', () => {
+    const query = plainToInstance(ListRoomsQueryDto, {});
+    expect(query.page).toBe(1);
+    expect(query.pageSize).toBe(20);
+  });
+
+  it('keeps explicit page and pageSize', () => {
+    const query = plainToInstance(ListRoomsQueryDto, { page: 3, pageSize: 50 });
+    expect(query.page).toBe(3);
+    expect(query.pageSize).toBe(50);
   });
 });
