@@ -26,4 +26,10 @@ describe('password', () => {
   it('rejects a non-scrypt stored value (demo user placeholder)', async () => {
     expect(await verifyPassword('longenough', '!')).toBe(false);
   });
+
+  it('rejects a malformed hash that decodes to an empty buffer', async () => {
+    const salt = 'ab'.repeat(16);
+    expect(await verifyPassword('longenough', `scrypt$${salt}$zz`)).toBe(false);
+    expect(await verifyPassword('anything', `scrypt$${salt}$`)).toBe(false);
+  });
 });

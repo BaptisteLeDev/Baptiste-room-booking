@@ -19,13 +19,15 @@ export async function verifyPassword(
   password: string,
   stored: string,
 ): Promise<boolean> {
-  const [scheme, saltHex, hashHex] = stored.split('$');
-  if (scheme !== SCHEME || !saltHex || !hashHex) return false;
+  const parts = stored.split('$');
+  if (parts.length !== 3 || parts[0] !== SCHEME) return false;
+  const [, saltHex, hashHex] = parts;
   const expected = Buffer.from(hashHex, 'hex');
+  if (!saltHex || expected.length !== KEYLEN) return false;
   const actual = await scryptAsync(
     password,
     Buffer.from(saltHex, 'hex'),
-    expected.length,
+    KEYLEN,
   );
   return timingSafeEqual(expected, actual);
 }
