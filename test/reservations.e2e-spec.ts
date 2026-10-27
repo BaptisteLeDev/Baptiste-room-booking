@@ -17,7 +17,9 @@ const UNKNOWN_ID = '7b1e4c2d-5a3f-4d8e-9c6b-1f2a3b4c5d6e';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const at = (day: number, hour: number) =>
-  `2026-12-${pad(day)}T${pad(hour)}:00:00.000Z`;
+  `2026-12-${pad(day)}T${pad(hour)}:00:00Z`;
+const iso = (day: number, hour: number) =>
+  new Date(at(day, hour)).toISOString();
 
 describe('Reservations routes (e2e)', () => {
   let app: INestApplication<App>;
@@ -75,8 +77,8 @@ describe('Reservations routes (e2e)', () => {
       status: 'PENDING',
       totalAmount: 135,
       currency: 'EUR',
-      startAt: at(1, 9),
-      endAt: at(1, 12),
+      startAt: iso(1, 9),
+      endAt: iso(1, 12),
       comment: 'Projecteur',
       numberOfParticipants: 4,
     });
@@ -192,16 +194,16 @@ describe('Reservations routes (e2e)', () => {
     expect(res.body).toMatchObject({
       status: 'PENDING',
       totalAmount: 90,
-      startAt: at(1, 13),
-      endAt: at(1, 15),
+      startAt: iso(1, 13),
+      endAt: iso(1, 15),
     });
 
     const fetched = await http().get(`/api/reservations/${r.id}`).expect(200);
     expect(fetched.body).toMatchObject({
       status: 'PENDING',
       totalAmount: 90,
-      startAt: at(1, 13),
-      endAt: at(1, 15),
+      startAt: iso(1, 13),
+      endAt: iso(1, 15),
     });
   });
 
@@ -287,6 +289,18 @@ describe('Reservations routes (e2e)', () => {
     expect(res.body).toEqual([
       { startTime: '09:00', endTime: '12:00', available: false },
     ]);
+  });
+
+  it('POST reservation on INACTIVE room -> 404 NOT_FOUND', async () => {
+    await http()
+      .patch(`/api/rooms/${roomId}`)
+      .send({ status: 'INACTIVE' })
+      .expect(200);
+    const res = await http()
+      .post('/api/reservations')
+      .send(payload())
+      .expect(404);
+    expect(res.body).toMatchObject({ code: 'NOT_FOUND' });
   });
 
   it('DELETE room with an active reservation -> 409 ROOM_HAS_RESERVATIONS', async () => {

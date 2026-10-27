@@ -10,10 +10,10 @@ describe('TimeSlot', () => {
     expect(s('09', '12').hours()).toBe(3);
   });
 
-  it('keeps original strings', () => {
+  it('normalises bounds to ISO with milliseconds', () => {
     const t = s('09', '10');
-    expect(t.startAt).toBe('2026-11-02T09:00:00Z');
-    expect(t.endAt).toBe('2026-11-02T10:00:00Z');
+    expect(t.startAt).toBe('2026-11-02T09:00:00.000Z');
+    expect(t.endAt).toBe('2026-11-02T10:00:00.000Z');
   });
 
   it.each([

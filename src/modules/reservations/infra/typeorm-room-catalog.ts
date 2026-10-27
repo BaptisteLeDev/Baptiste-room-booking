@@ -14,7 +14,7 @@ export class TypeOrmRoomCatalog implements RoomCatalog {
 
   async find(roomId: string): Promise<RoomTerms | undefined> {
     const room = await this.rooms.findOne({
-      where: { id: roomId },
+      where: { id: roomId, status: 'ACTIVE' },
       select: ['capacity', 'pricePerHour'],
     });
     return room

@@ -81,7 +81,7 @@ describe('ReservationsService', () => {
     );
     expect(e.code).toBe('SLOT_UNAVAILABLE');
     const ok = await svc.updateReservation(a.id, at('02', '10', '11'));
-    expect(ok.startAt).toBe('2026-11-02T10:00:00Z');
+    expect(ok.startAt).toBe('2026-11-02T10:00:00.000Z');
     expect(ok.status).toBe('PENDING');
   });
 

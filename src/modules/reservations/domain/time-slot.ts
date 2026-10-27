@@ -20,7 +20,12 @@ export class TimeSlot {
         'Le début doit précéder la fin.',
       );
     }
-    return new TimeSlot(startAt, endAt, startMs, endMs);
+    return new TimeSlot(
+      new Date(startMs).toISOString(),
+      new Date(endMs).toISOString(),
+      startMs,
+      endMs,
+    );
   }
 
   hours(): number {
