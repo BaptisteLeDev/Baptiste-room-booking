@@ -85,6 +85,15 @@ describe('ReservationsService', () => {
     expect(ok.status).toBe('PENDING');
   });
 
+  it('amend own reservation shifted 15 min -> ok', async () => {
+    const a = await create('room1', '02', '09', '12');
+    const ok = await svc.updateReservation(a.id, {
+      startAt: '2026-11-02T09:15:00Z',
+      endAt: '2026-11-02T12:15:00Z',
+    });
+    expect(ok.startAt).toBe('2026-11-02T09:15:00.000Z');
+  });
+
   it('amend CANCELLED onto taken slot -> status conflict first', async () => {
     const a = await create('room1', '02', '09', '12');
     await svc.cancelReservation(a.id);

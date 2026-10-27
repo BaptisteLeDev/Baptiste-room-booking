@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { DataSource } from 'typeorm';
 import { App } from 'supertest/types.js';
 import type {
   AvailabilityUpdateRequest,
@@ -119,6 +120,71 @@ describe('Reservations routes (e2e)', () => {
         .send(payload({ startAt: at(1, 10), endAt: at(1, 11) })),
     ]);
     expect([a.status, b.status].sort((x, y) => x - y)).toEqual([201, 409]);
+  });
+
+  const countReservations = async (): Promise<number> => {
+    const rows = await app
+      .get(DataSource)
+      .query<{ count: string }[]>('SELECT count(*) FROM reservations');
+    return Number(rows[0].count);
+  };
+
+  it('10 overlapping POST in parallel -> one 201, nine 409, one row', async () => {
+    const res = await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        http()
+          .post('/api/reservations')
+          .send(payload({ startAt: at(1, 9 + (i % 2)), endAt: at(1, 12) })),
+      ),
+    );
+    expect(res.filter((r) => r.status === 201)).toHaveLength(1);
+    const lost = res.filter((r) => r.status === 409);
+    expect(lost).toHaveLength(9);
+    lost.forEach((r) =>
+      expect(r.body).toMatchObject({ code: 'SLOT_UNAVAILABLE' }),
+    );
+    expect(await countReservations()).toBe(1);
+  });
+
+  it('parallel POST on two rooms -> both 201', async () => {
+    const other = await createRoom();
+    const res = await Promise.all([
+      http().post('/api/reservations').send(payload()),
+      http()
+        .post('/api/reservations')
+        .send(payload({ roomId: other })),
+    ]);
+    expect(res.map((r) => r.status)).toEqual([201, 201]);
+  });
+
+  it('parallel adjacent POST -> both 201', async () => {
+    const res = await Promise.all([
+      http().post('/api/reservations').send(payload()),
+      http()
+        .post('/api/reservations')
+        .send(payload({ startAt: at(1, 12), endAt: at(1, 13) })),
+    ]);
+    expect(res.map((r) => r.status)).toEqual([201, 201]);
+  });
+
+  it('parallel PATCH onto slot X + POST slot X -> exactly one 2xx', async () => {
+    const a = await create({ startAt: at(2, 9), endAt: at(2, 10) });
+    const res = await Promise.all([
+      http()
+        .patch(`/api/reservations/${a.id}`)
+        .send({ startAt: at(1, 9), endAt: at(1, 12) }),
+      http().post('/api/reservations').send(payload()),
+    ]);
+    expect(res.filter((r) => r.status < 300)).toHaveLength(1);
+    expect(res.filter((r) => r.status === 409)).toHaveLength(1);
+  });
+
+  it('POST 21 participants -> 400, nothing stored', async () => {
+    await http()
+      .post('/api/reservations')
+      .send(payload({ numberOfParticipants: 21 }))
+      .expect(400);
+    expect(await countReservations()).toBe(0);
   });
 
   it('POST participants above capacity -> 400', () => {

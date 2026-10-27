@@ -40,23 +40,25 @@ export class ReservationsService {
     userId: string,
     req: ReservationCreateRequest,
   ): Promise<ReservationSnapshot> {
-    const room = await this.catalog.find(req.roomId);
-    if (!room) throw notFound();
-    const slot = TimeSlot.of(req.startAt, req.endAt);
-    await this.assertFree(req.roomId, slot);
-    const r = Reservation.request({
-      id: randomUUID(),
-      roomId: req.roomId,
-      userId,
-      slot,
-      numberOfParticipants: req.numberOfParticipants,
-      comment: req.comment,
-      room,
-      currency: CURRENCY,
-      now: new Date(),
+    return this.repo.exclusive(req.roomId, async (tx) => {
+      const room = await this.catalog.find(req.roomId);
+      if (!room) throw notFound();
+      const slot = TimeSlot.of(req.startAt, req.endAt);
+      await this.assertFree(tx, req.roomId, slot);
+      const r = Reservation.request({
+        id: randomUUID(),
+        roomId: req.roomId,
+        userId,
+        slot,
+        numberOfParticipants: req.numberOfParticipants,
+        comment: req.comment,
+        room,
+        currency: CURRENCY,
+        now: new Date(),
+      });
+      await tx.save(r);
+      return r.toSnapshot();
     });
-    await this.repo.save(r);
-    return r.toSnapshot();
   }
 
   async getReservation(id: string): Promise<ReservationSnapshot> {
@@ -80,6 +82,20 @@ export class ReservationsService {
     req: ReservationUpdateRequest,
   ): Promise<ReservationSnapshot> {
     const r = await this.load(id);
+    const changesSlot = req.startAt !== undefined || req.endAt !== undefined;
+    if (!changesSlot) return this.amend(this.repo, r, req);
+    return this.repo.exclusive(r.roomId, async (tx) => {
+      const fresh = await tx.get(id);
+      if (!fresh) throw notFound();
+      return this.amend(tx, fresh, req);
+    });
+  }
+
+  private async amend(
+    repo: ReservationRepository,
+    r: Reservation,
+    req: ReservationUpdateRequest,
+  ): Promise<ReservationSnapshot> {
     const room = await this.catalog.find(r.roomId);
     if (!room) throw notFound();
     const cur = r.toSnapshot();
@@ -95,8 +111,8 @@ export class ReservationsService {
       },
       room,
     );
-    if (slot) await this.assertFree(r.roomId, slot, r.id);
-    await this.repo.save(r);
+    if (slot) await this.assertFree(repo, r.roomId, slot, r.id);
+    await repo.save(r);
     return r.toSnapshot();
   }
 
@@ -135,15 +151,13 @@ export class ReservationsService {
     return r.toSnapshot();
   }
 
-  private async assertFree(roomId: string, slot: TimeSlot, selfId?: string) {
-    const taken = (await this.repo.list()).some(
-      (o) =>
-        o.roomId === roomId &&
-        o.id !== selfId &&
-        o.isActive &&
-        o.slot.overlaps(slot),
-    );
-    if (taken) {
+  private async assertFree(
+    repo: ReservationRepository,
+    roomId: string,
+    slot: TimeSlot,
+    selfId?: string,
+  ) {
+    if (await repo.findOverlapping(roomId, slot, selfId)) {
       throw new DomainError(
         'conflict',
         'SLOT_UNAVAILABLE',
