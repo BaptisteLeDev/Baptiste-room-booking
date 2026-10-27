@@ -1,125 +1,257 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
+import { DataSource } from 'typeorm';
 import type {
+  ApiError,
   AvailabilityUpdateRequest,
+  PaginatedRooms,
+  Room,
   RoomCreateRequest,
   RoomUpdateRequest,
 } from '../src/contract.js';
-import { createTestApp } from './create-app.js';
+import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
+import { createTestApp, resetDatabase } from './create-app.js';
 
-const ROOM_ID = '3f2c8a4e-9b1d-4e7a-8c5f-2a6b7d8e9f01';
+const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000';
+
+const json = <T>(res: { body: unknown }) => res.body as T;
+
+const roomBody = (
+  overrides: Partial<RoomCreateRequest> = {},
+): RoomCreateRequest => ({
+  name: 'Salle Paris',
+  capacity: 20,
+  location: 'Paris',
+  pricePerHour: 35,
+  ...overrides,
+});
 
 describe('Rooms routes (e2e)', () => {
   let app: INestApplication<App>;
 
+  const http = () => request(app.getHttpServer());
+
+  const createRoom = async (overrides?: Partial<RoomCreateRequest>) => {
+    const res = await http()
+      .post('/api/rooms')
+      .send(roomBody(overrides))
+      .expect(201);
+    return res.body as Room;
+  };
+
   beforeAll(async () => {
     app = await createTestApp();
+  });
+
+  beforeEach(async () => {
+    await resetDatabase(app);
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('GET /api/rooms -> 200', () => {
-    return request(app.getHttpServer()).get('/api/rooms').expect(200);
-  });
+  it('POST /api/rooms then GET /api/rooms/:roomId returns the same room', async () => {
+    const created = await createRoom({ description: 'Lumineuse' });
 
-  it('POST /api/rooms -> 201', () => {
-    const body: RoomCreateRequest = {
+    expect(created).toMatchObject({
       name: 'Salle Paris',
+      description: 'Lumineuse',
       capacity: 20,
       location: 'Paris',
+      equipment: [],
       pricePerHour: 35,
-    };
-    return request(app.getHttpServer())
-      .post('/api/rooms')
-      .send(body)
-      .expect(201);
+      status: 'ACTIVE',
+      ownerId: userFixture.id,
+    });
+    expect(created.imageUrl).toBeUndefined();
+
+    const fetched = await http().get(`/api/rooms/${created.id}`).expect(200);
+    expect(fetched.body).toEqual(created);
   });
 
-  it('GET /api/rooms/:roomId -> 200', () => {
-    return request(app.getHttpServer())
-      .get(`/api/rooms/${ROOM_ID}`)
+  it('GET /api/rooms lists created rooms with total', async () => {
+    await createRoom();
+    await createRoom({ name: 'Salle Lyon', location: 'Lyon' });
+
+    const res = await http().get('/api/rooms').expect(200);
+    const page = json<PaginatedRooms>(res);
+    expect(page.total).toBe(2);
+    expect(page.items).toHaveLength(2);
+  });
+
+  it('GET /api/rooms filters by location', async () => {
+    await createRoom();
+    await createRoom({ name: 'Salle Lyon', location: 'Lyon' });
+
+    const res = await http()
+      .get('/api/rooms')
+      .query({ location: 'Lyon' })
       .expect(200);
+    const page = json<PaginatedRooms>(res);
+    expect(page.total).toBe(1);
+    expect(page.items[0].name).toBe('Salle Lyon');
   });
 
-  it('GET /api/rooms/:roomId with non-uuid id -> 400', () => {
-    return request(app.getHttpServer())
-      .get('/api/rooms/not-a-uuid')
-      .expect(400);
+  it('GET /api/rooms filters by capacityMin', async () => {
+    await createRoom({ capacity: 10 });
+    await createRoom({ name: 'Grande salle', capacity: 40 });
+
+    const res = await http()
+      .get('/api/rooms')
+      .query({ capacityMin: 30 })
+      .expect(200);
+    const page = json<PaginatedRooms>(res);
+    expect(page.total).toBe(1);
+    expect(page.items[0].name).toBe('Grande salle');
   });
 
-  it('PATCH /api/rooms/:roomId -> 200', () => {
+  it('GET /api/rooms paginates with pageSize', async () => {
+    await createRoom();
+    await createRoom({ name: 'Salle Lyon' });
+
+    const res = await http()
+      .get('/api/rooms')
+      .query({ pageSize: 1 })
+      .expect(200);
+    const page = json<PaginatedRooms>(res);
+    expect(page.items).toHaveLength(1);
+    expect(page.total).toBe(2);
+  });
+
+  it('GET /api/rooms/:roomId with unknown id -> 404 NOT_FOUND', async () => {
+    const res = await http().get(`/api/rooms/${UNKNOWN_ID}`).expect(404);
+    expect(json<ApiError>(res).code).toBe('NOT_FOUND');
+  });
+
+  it('PATCH /api/rooms/:roomId persists the status', async () => {
+    const created = await createRoom();
     const body: RoomUpdateRequest = { status: 'INACTIVE' };
-    return request(app.getHttpServer())
-      .patch(`/api/rooms/${ROOM_ID}`)
+
+    const patched = await http()
+      .patch(`/api/rooms/${created.id}`)
       .send(body)
       .expect(200);
+    expect(json<Room>(patched).status).toBe('INACTIVE');
+
+    const fetched = await http().get(`/api/rooms/${created.id}`).expect(200);
+    expect(json<Room>(fetched).status).toBe('INACTIVE');
   });
 
-  it('DELETE /api/rooms/:roomId -> 204', () => {
-    return request(app.getHttpServer())
-      .delete(`/api/rooms/${ROOM_ID}`)
-      .expect(204);
+  it('DELETE /api/rooms/:roomId -> 204 then GET -> 404', async () => {
+    const created = await createRoom();
+
+    await http().delete(`/api/rooms/${created.id}`).expect(204);
+    await http().get(`/api/rooms/${created.id}`).expect(404);
   });
 
-  it('GET /api/rooms/:roomId/availability -> 200', () => {
-    return request(app.getHttpServer())
-      .get(`/api/rooms/${ROOM_ID}/availability`)
-      .query({ date: '2026-11-02' })
-      .expect(200);
+  it('DELETE /api/rooms/:roomId with unknown id -> 404', async () => {
+    const res = await http().delete(`/api/rooms/${UNKNOWN_ID}`).expect(404);
+    expect(json<ApiError>(res).code).toBe('NOT_FOUND');
   });
 
-  it('PUT /api/rooms/:roomId/availability -> 200', () => {
-    const body: AvailabilityUpdateRequest = {
-      date: '2026-11-02',
-      slots: [{ startTime: '09:00', endTime: '12:30', available: true }],
+  it('PUT then GET availability replaces the slots of the day', async () => {
+    const created = await createRoom();
+    const date = '2026-11-02';
+    const first: AvailabilityUpdateRequest = {
+      date,
+      slots: [
+        { startTime: '09:00', endTime: '12:30', available: true },
+        { startTime: '14:00', endTime: '18:00', available: true },
+      ],
     };
-    return request(app.getHttpServer())
-      .put(`/api/rooms/${ROOM_ID}/availability`)
-      .send(body)
+
+    const put = await http()
+      .put(`/api/rooms/${created.id}/availability`)
+      .send(first)
       .expect(200);
+    expect(put.body).toEqual([
+      { startTime: '09:00', endTime: '12:30', available: true },
+      { startTime: '14:00', endTime: '18:00', available: true },
+    ]);
+
+    const get = await http()
+      .get(`/api/rooms/${created.id}/availability`)
+      .query({ date })
+      .expect(200);
+    expect(get.body).toEqual(put.body);
+
+    const replaced: AvailabilityUpdateRequest = {
+      date,
+      slots: [{ startTime: '10:00', endTime: '11:00', available: true }],
+    };
+    await http()
+      .put(`/api/rooms/${created.id}/availability`)
+      .send(replaced)
+      .expect(200);
+
+    const after = await http()
+      .get(`/api/rooms/${created.id}/availability`)
+      .query({ date })
+      .expect(200);
+    expect(after.body).toEqual([
+      { startTime: '10:00', endTime: '11:00', available: true },
+    ]);
+  });
+
+  it('PUT availability with unknown room -> 404', async () => {
+    const res = await http()
+      .put(`/api/rooms/${UNKNOWN_ID}/availability`)
+      .send({
+        date: '2026-11-02',
+        slots: [{ startTime: '09:00', endTime: '10:00', available: true }],
+      })
+      .expect(404);
+    expect(json<ApiError>(res).code).toBe('NOT_FOUND');
+  });
+
+  it('DELETE room removes its availability rows', async () => {
+    const created = await createRoom();
+    await http()
+      .put(`/api/rooms/${created.id}/availability`)
+      .send({
+        date: '2026-11-02',
+        slots: [{ startTime: '09:00', endTime: '10:00', available: true }],
+      })
+      .expect(200);
+
+    await http().delete(`/api/rooms/${created.id}`).expect(204);
+
+    const rows: { count: string }[] = await app
+      .get(DataSource)
+      .query('SELECT count(*) FROM availabilities');
+    expect(Number(rows[0].count)).toBe(0);
   });
 
   it('GET /api/rooms with non-integer capacityMin -> 400', () => {
-    return request(app.getHttpServer())
-      .get('/api/rooms')
-      .query({ capacityMin: 'abc' })
-      .expect(400);
+    return http().get('/api/rooms').query({ capacityMin: 'abc' }).expect(400);
   });
 
   it('GET /api/rooms with capacityMin above capacityMax -> 400', () => {
-    return request(app.getHttpServer())
+    return http()
       .get('/api/rooms')
       .query({ capacityMin: 5, capacityMax: 3 })
       .expect(400);
   });
 
   it('GET /api/rooms with non-boolean available -> 400', () => {
-    return request(app.getHttpServer())
-      .get('/api/rooms')
-      .query({ available: 'maybe' })
-      .expect(400);
+    return http().get('/api/rooms').query({ available: 'maybe' }).expect(400);
   });
 
   it('GET /api/rooms with pageSize above 100 -> 400', () => {
-    return request(app.getHttpServer())
-      .get('/api/rooms')
-      .query({ pageSize: 500 })
-      .expect(400);
+    return http().get('/api/rooms').query({ pageSize: 500 }).expect(400);
   });
 
   it('GET /api/rooms with invalid calendar date -> 400', () => {
-    return request(app.getHttpServer())
-      .get('/api/rooms')
-      .query({ date: '2026-13-45' })
-      .expect(400);
+    return http().get('/api/rooms').query({ date: '2026-13-45' }).expect(400);
   });
 
   it('GET /api/rooms/:roomId/availability without date -> 400', () => {
-    return request(app.getHttpServer())
-      .get(`/api/rooms/${ROOM_ID}/availability`)
-      .expect(400);
+    return http().get(`/api/rooms/${UNKNOWN_ID}/availability`).expect(400);
+  });
+
+  it('GET /api/rooms/:roomId with non-uuid id -> 400', () => {
+    return http().get('/api/rooms/not-a-uuid').expect(400);
   });
 });

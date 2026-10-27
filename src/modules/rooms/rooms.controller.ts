@@ -18,53 +18,55 @@ import { GetRoomAvailabilityQueryDto } from './dto/get-room-availability-query.d
 import { ListRoomsQueryDto } from './dto/list-rooms-query.dto.js';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto.js';
 import { UpdateRoomDto } from './dto/update-room.dto.js';
-import { availabilitySlotsFixture } from './fixtures/availability-slots.fixture.js';
-import { paginatedRoomsFixture } from './fixtures/paginated-rooms.fixture.js';
-import { roomFixture } from './fixtures/room.fixture.js';
+import { RoomsService } from './rooms.service.js';
 
 @Controller('rooms')
 export class RoomsController {
+  constructor(private readonly rooms: RoomsService) {}
+
   @Get()
-  listRooms(@Query() _query: ListRoomsQueryDto): PaginatedRooms {
-    return paginatedRoomsFixture;
+  listRooms(@Query() query: ListRoomsQueryDto): Promise<PaginatedRooms> {
+    return this.rooms.list(query);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  createRoom(@Body() _body: CreateRoomDto): Room {
-    return roomFixture;
+  createRoom(@Body() body: CreateRoomDto): Promise<Room> {
+    return this.rooms.create(body);
   }
 
   @Get(':roomId')
-  getRoom(@Param('roomId', ParseUUIDPipe) _roomId: string): Room {
-    return roomFixture;
+  getRoom(@Param('roomId', ParseUUIDPipe) roomId: string): Promise<Room> {
+    return this.rooms.get(roomId);
   }
 
   @Patch(':roomId')
   updateRoom(
-    @Param('roomId', ParseUUIDPipe) _roomId: string,
-    @Body() _body: UpdateRoomDto,
-  ): Room {
-    return roomFixture;
+    @Param('roomId', ParseUUIDPipe) roomId: string,
+    @Body() body: UpdateRoomDto,
+  ): Promise<Room> {
+    return this.rooms.update(roomId, body);
   }
 
   @Delete(':roomId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  deleteRoom(@Param('roomId', ParseUUIDPipe) _roomId: string): void {}
+  deleteRoom(@Param('roomId', ParseUUIDPipe) roomId: string): Promise<void> {
+    return this.rooms.delete(roomId);
+  }
 
   @Get(':roomId/availability')
   getRoomAvailability(
-    @Param('roomId', ParseUUIDPipe) _roomId: string,
-    @Query() _query: GetRoomAvailabilityQueryDto,
-  ): AvailabilitySlot[] {
-    return availabilitySlotsFixture;
+    @Param('roomId', ParseUUIDPipe) roomId: string,
+    @Query() query: GetRoomAvailabilityQueryDto,
+  ): Promise<AvailabilitySlot[]> {
+    return this.rooms.getAvailability(roomId, query);
   }
 
   @Put(':roomId/availability')
   setRoomAvailability(
-    @Param('roomId', ParseUUIDPipe) _roomId: string,
-    @Body() _body: UpdateAvailabilityDto,
-  ): AvailabilitySlot[] {
-    return availabilitySlotsFixture;
+    @Param('roomId', ParseUUIDPipe) roomId: string,
+    @Body() body: UpdateAvailabilityDto,
+  ): Promise<AvailabilitySlot[]> {
+    return this.rooms.setAvailability(roomId, body);
   }
 }
