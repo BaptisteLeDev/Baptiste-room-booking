@@ -42,11 +42,11 @@ PostgreSQL, table `reservations`, via `TypeOrmReservationRepository` (`Reservati
 
 - Créneau : début strictement avant la fin (400 `VALIDATION_ERROR`).
 - Participants : au plus la capacité de la salle (400 `VALIDATION_ERROR`).
-- Une réservation active ne chevauche aucune autre réservation active de la même salle (409 `SLOT_UNAVAILABLE`) ; la sienne propre n'est pas comptée lors d'une modification.
+- Une réservation active ne chevauche aucune autre réservation active de la même salle (409 `SLOT_UNAVAILABLE`), vérifié sous verrou de la ligne `rooms` (création et changement de créneau) ; la contrainte `no_overlap_active` reste le filet. La sienne propre n'est pas comptée lors d'une modification.
 - Modifier le créneau d'une réservation `CONFIRMED` la repasse en `PENDING` et recalcule le montant.
 - Seules `PENDING` et `CONFIRMED` sont modifiables.
 - Salle inconnue ou réservation inconnue : 404 `NOT_FOUND`.
 
 ## ADR
 
-Aucun.
+- [0001 - Verrouiller la ligne salle pour réserver](../../../docs/decisions/0001-lock-room-row-for-booking.md)
