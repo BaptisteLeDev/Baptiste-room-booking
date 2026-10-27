@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { dataSourceOptions } from './database/data-source.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { RoomsModule } from './modules/rooms/rooms.module.js';
 import { ReservationsModule } from './modules/reservations/reservations.module.js';
@@ -18,6 +20,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       appSecret: process.env.OBSERVE_APP_SECRET ?? 'YOUR_APP_SECRET',
       serviceId: 'nest-app',
     }),
+    TypeOrmModule.forRootAsync({ useFactory: () => dataSourceOptions }),
     AuthModule,
     RoomsModule,
     ReservationsModule,
