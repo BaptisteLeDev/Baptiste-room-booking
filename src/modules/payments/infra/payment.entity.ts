@@ -3,12 +3,8 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
-  OneToOne,
   PrimaryGeneratedColumn,
-  type Relation,
 } from 'typeorm';
-import { ReservationEntity } from '../../reservations/infra/reservation.entity.js';
 import { decimal } from '../../../database/decimal.transformer.js';
 
 @Entity('payments')
@@ -16,10 +12,6 @@ import { decimal } from '../../../database/decimal.transformer.js';
 export class PaymentEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
-
-  @OneToOne(() => ReservationEntity)
-  @JoinColumn({ name: 'reservation_id' })
-  reservation!: Relation<ReservationEntity>;
 
   @Column({ type: 'uuid', name: 'reservation_id' })
   reservationId!: string;
