@@ -27,6 +27,7 @@ export class JwtTokenIssuer implements TokenIssuer {
       exp: number;
       iat: number;
     }>(token);
+    if (typeof iat !== 'number') throw new Error('token has no iat claim');
     return { userId: sub, exp, issuedAt: iat };
   }
 }

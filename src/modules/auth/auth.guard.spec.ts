@@ -140,6 +140,19 @@ describe('AuthGuard', () => {
     await expect(guard.canActivate(contextFor(request))).resolves.toBe(true);
   });
 
+  it('rejects a token without an iat claim', async () => {
+    const { guard, jwt } = setup(User.restore(baseUser));
+    const token = await jwt.signAsync(
+      { sub: 'user-1' },
+      { expiresIn: 3600, noTimestamp: true },
+    );
+    const request = { headers: { authorization: `Bearer ${token}` } };
+
+    await expect(guard.canActivate(contextFor(request))).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+  });
+
   it('rejects a valid token whose user no longer exists', async () => {
     const { guard, jwt } = setup(null);
     const token = await jwt.signAsync(

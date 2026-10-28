@@ -182,7 +182,7 @@ describe('Auth routes (e2e)', () => {
 
   it('PATCH /api/auth/password -> old token 401 on /me, new login 200', async () => {
     const oldToken = await loginAs(app);
-    // JWT iat has 1s granularity: wait so the old token is strictly older than the change
+    // iat is whole seconds: wait so old token is strictly older
     await new Promise((resolve) => setTimeout(resolve, 1100));
     await http()
       .patch('/api/auth/password')

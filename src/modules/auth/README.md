@@ -28,7 +28,7 @@ Pas de base propre. Ports dans `domain/` (`PASSWORD_HASHER`, `TOKEN_ISSUER`, `RE
 - E-mail déjà pris à l'inscription : 409 `EMAIL_ALREADY_USED`.
 - Changement de mot de passe : l'ancien doit être valide.
 - Jeton absent, invalide, expiré ou révoqué : 401.
-- Jeton émis avant le dernier changement de mot de passe : 401.
+- Jeton émis avant le dernier changement de mot de passe (à la seconde près) : 401.
 - Rôle inconnu de la base ou insuffisant : 403.
 - `JWT_SECRET` obligatoire au démarrage.
 - La liste des jetons révoqués est en mémoire : perdue au redémarrage, non partagée entre instances.
