@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'node:crypto';
 import { Repository } from 'typeorm';
-import { hasPgCode } from '../../common/database/pg-error.js';
+import { hasPgCode, PgCode } from '../../common/database/pg-error.js';
 import type {
   AuthResponse,
   ChangePasswordRequest,
@@ -15,8 +15,6 @@ import { emailUsed, normalizeEmail, toUser } from '../users/user.mapper.js';
 import { UserEntity } from '../users/infra/user.entity.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { RevokedTokens } from './revoked-tokens.js';
-
-const UNIQUE_VIOLATION = '23505';
 
 const invalidCredentials = () =>
   new UnauthorizedException({
@@ -48,7 +46,7 @@ export class AuthService {
       );
       return toUser(saved);
     } catch (e) {
-      if (hasPgCode(e, UNIQUE_VIOLATION)) {
+      if (hasPgCode(e, PgCode.UNIQUE_VIOLATION)) {
         throw emailUsed();
       }
       throw e;

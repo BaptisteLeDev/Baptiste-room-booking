@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { PaginatedReservations, Statistics } from '../../contract.js';
 import { AuthorizationService } from '../auth/authorization.service.js';
+import { paginate } from '../../common/database/paginate.js';
 import { DomainError } from '../../common/domain-error.js';
 import { ReservationEntity } from '../reservations/infra/reservation.entity.js';
 import { toSnapshot as toReservation } from '../reservations/infra/typeorm-reservation.repository.js';
@@ -31,16 +32,14 @@ export class AdminService {
     const qb = this.reservations
       .createQueryBuilder('r')
       .orderBy('r.createdAt', 'DESC')
-      .addOrderBy('r.id')
-      .skip((query.page - 1) * query.pageSize)
-      .take(query.pageSize);
+      .addOrderBy('r.id');
     if (query.status)
       qb.andWhere('r.status = :status', { status: query.status });
     if (query.roomId)
       qb.andWhere('r.roomId = :roomId', { roomId: query.roomId });
     if (query.userId)
       qb.andWhere('r.userId = :userId', { userId: query.userId });
-    const [items, total] = await qb.getManyAndCount();
+    const { items, total } = await paginate(qb, query.page, query.pageSize);
     return {
       page: query.page,
       pageSize: query.pageSize,

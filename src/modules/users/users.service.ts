@@ -11,9 +11,8 @@ import { Repository } from 'typeorm';
 import { UserEntity } from './infra/user.entity.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import { emailUsed, normalizeEmail, toUser } from './user.mapper.js';
-import { hasPgCode } from '../../common/database/pg-error.js';
-
-const UNIQUE_VIOLATION = '23505';
+import { paginate } from '../../common/database/paginate.js';
+import { hasPgCode, PgCode } from '../../common/database/pg-error.js';
 
 @Injectable()
 export class UsersService {
@@ -31,11 +30,9 @@ export class UsersService {
     const qb = this.users
       .createQueryBuilder('u')
       .orderBy('u.createdAt', 'DESC')
-      .addOrderBy('u.id')
-      .skip((query.page - 1) * query.pageSize)
-      .take(query.pageSize);
+      .addOrderBy('u.id');
     if (query.role) qb.andWhere('u.role = :role', { role: query.role });
-    const [items, total] = await qb.getManyAndCount();
+    const { items, total } = await paginate(qb, query.page, query.pageSize);
     return {
       page: query.page,
       pageSize: query.pageSize,
@@ -74,7 +71,7 @@ export class UsersService {
     try {
       return toUser(await this.users.save(user));
     } catch (e) {
-      if (hasPgCode(e, UNIQUE_VIOLATION)) throw emailUsed();
+      if (hasPgCode(e, PgCode.UNIQUE_VIOLATION)) throw emailUsed();
       throw e;
     }
   }

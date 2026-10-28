@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { hasPgCode } from '../../../common/database/pg-error.js';
+import { paginate } from '../../../common/database/paginate.js';
+import { hasPgCode, PgCode } from '../../../common/database/pg-error.js';
 import { DomainError } from '../../../common/domain-error.js';
 import type { Room } from '../domain/entities/room.entity.js';
 import type {
@@ -13,8 +14,6 @@ import type {
 } from '../domain/repositories/room.repository.interface.js';
 import { RoomEntity } from './room.entity.js';
 import { toEntity, toRoom } from './room.mapper.js';
-
-const FK_VIOLATION = '23503';
 
 // availability slot `a` is open and no active reservation overlaps it
 const SLOT_OPEN = `(a.available AND NOT EXISTS (
@@ -55,9 +54,7 @@ export class TypeOrmRoomRepository implements IRoomRepository {
     const qb = this.rows
       .createQueryBuilder('r')
       .orderBy('r.createdAt', 'DESC')
-      .addOrderBy('r.id')
-      .skip((q.page - 1) * q.pageSize)
-      .take(q.pageSize);
+      .addOrderBy('r.id');
     if (q.search)
       qb.andWhere('(r.name ILIKE :s OR r.description ILIKE :s)', {
         s: `%${q.search}%`,
@@ -101,7 +98,7 @@ export class TypeOrmRoomRepository implements IRoomRepository {
         },
       );
     }
-    const [items, total] = await qb.getManyAndCount();
+    const { items, total } = await paginate(qb, q.page, q.pageSize);
     return {
       page: q.page,
       pageSize: q.pageSize,
@@ -114,7 +111,7 @@ export class TypeOrmRoomRepository implements IRoomRepository {
     try {
       await this.rows.delete(id);
     } catch (e) {
-      if (hasPgCode(e, FK_VIOLATION)) {
+      if (hasPgCode(e, PgCode.FK_VIOLATION)) {
         throw new DomainError(
           'conflict',
           'ROOM_HAS_RESERVATIONS',

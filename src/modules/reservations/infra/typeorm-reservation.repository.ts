@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { hasPgCode } from '../../../common/database/pg-error.js';
+import { hasPgCode, PgCode } from '../../../common/database/pg-error.js';
 import { DomainError } from '../../../common/domain-error.js';
 import {
   Reservation,
@@ -11,8 +11,6 @@ import type { ReservationRepository } from '../domain/reservation-repository.js'
 import { RoomEntity } from '../../rooms/infra/room.entity.js';
 import { TimeSlot } from '../domain/time-slot.js';
 import { ReservationEntity } from './reservation.entity.js';
-
-const EXCLUSION_VIOLATION = '23P01';
 
 export const toSnapshot = (e: ReservationEntity): ReservationSnapshot => ({
   id: e.id,
@@ -61,7 +59,7 @@ export class TypeOrmReservationRepository implements ReservationRepository {
     try {
       await this.rows.save(fromSnapshot(r.toSnapshot()));
     } catch (e) {
-      if (hasPgCode(e, EXCLUSION_VIOLATION)) {
+      if (hasPgCode(e, PgCode.EXCLUSION_VIOLATION)) {
         throw new DomainError(
           'conflict',
           'SLOT_UNAVAILABLE',

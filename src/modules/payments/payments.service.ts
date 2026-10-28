@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { Payment, PaymentCreateRequest } from '../../contract.js';
 import { DomainError } from '../../common/domain-error.js';
 import { notFound } from '../../common/not-found.js';
-import { hasPgCode } from '../../common/database/pg-error.js';
+import { hasPgCode, PgCode } from '../../common/database/pg-error.js';
 import { AuthorizationService } from '../auth/authorization.service.js';
 import { Repository } from 'typeorm';
 import { ReservationEntity } from '../reservations/infra/reservation.entity.js';
@@ -74,7 +74,7 @@ export class PaymentsService {
         }),
       );
     } catch (error) {
-      if (hasPgCode(error, '23505')) {
+      if (hasPgCode(error, PgCode.UNIQUE_VIOLATION)) {
         throw alreadyExists();
       }
       throw error;
