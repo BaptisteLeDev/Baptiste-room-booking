@@ -54,10 +54,6 @@ export class User {
     return this.state.email;
   }
 
-  isAdmin(): boolean {
-    return this.state.role === 'ADMINISTRATEUR';
-  }
-
   changeProfile(changes: ProfileChanges): void {
     this.state = {
       ...this.state,

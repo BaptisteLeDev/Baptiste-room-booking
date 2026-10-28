@@ -32,11 +32,10 @@ describe('User', () => {
     });
   });
 
-  it('changeRole and isAdmin', () => {
+  it('changeRole', () => {
     const user = User.restore(base);
-    expect(user.isAdmin()).toBe(false);
     user.changeRole('ADMINISTRATEUR');
-    expect(user.isAdmin()).toBe(true);
+    expect(user.toSnapshot().role).toBe('ADMINISTRATEUR');
   });
 
   it('changePasswordHash replaces the hash', () => {
