@@ -7,6 +7,7 @@ import { DeleteUserUseCase } from './delete-user.use-case.js';
 import { GetUserUseCase } from './get-user.use-case.js';
 import { ListUsersUseCase } from './list-users.use-case.js';
 import { UpdateUserUseCase } from './update-user.use-case.js';
+import { rejection } from '../../../../../test/helpers/rejection.js';
 
 const ada = () =>
   User.restore({
@@ -40,12 +41,6 @@ const authz = (admin: boolean) =>
     }),
     requireSelfOrAdmin: vi.fn(async () => admin),
   }) as never;
-
-const rejection = (p: Promise<unknown>) =>
-  p.then(
-    () => new Error('did not reject'),
-    (e: unknown) => e,
-  );
 
 describe('users use cases', () => {
   it('get returns a snapshot without passwordHash', async () => {

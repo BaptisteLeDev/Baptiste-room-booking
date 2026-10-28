@@ -8,6 +8,7 @@ import type { ReservationCatalog } from '../../domain/ports/reservation-catalog.
 import type { IPaymentRepository } from '../../domain/repositories/payment.repository.interface.js';
 import { CreatePaymentUseCase } from './create-payment.use-case.js';
 import { GetPaymentUseCase } from './get-payment.use-case.js';
+import { rejection } from '../../../../../test/helpers/rejection.js';
 
 const reservation = {
   id: 'res1',
@@ -39,12 +40,6 @@ const repo = (stored: Payment[] = []): IPaymentRepository => ({
 });
 
 const request = { reservationId: 'res1', paymentMethod: 'CARD' } as const;
-
-const rejection = (promise: Promise<unknown>) =>
-  promise.then(
-    () => new Error('did not reject'),
-    (e: unknown) => e,
-  );
 
 describe('CreatePaymentUseCase', () => {
   it('creates a pending payment for the reservation owner', async () => {

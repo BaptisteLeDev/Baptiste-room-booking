@@ -11,6 +11,7 @@ import { ChangePasswordUseCase } from './change-password.use-case.js';
 import { LoginUseCase } from './login.use-case.js';
 import { LogoutUseCase } from './logout.use-case.js';
 import { RegisterUseCase } from './register.use-case.js';
+import { rejection } from '../../../../../test/helpers/rejection.js';
 
 const ada = (role: 'CLIENT' | 'ADMINISTRATEUR' = 'CLIENT') =>
   User.restore({
@@ -50,12 +51,6 @@ const tokens: TokenIssuer = {
   sign: async (id) => ({ token: `t:${id}`, expiresIn: 3600 }),
   verify: async (t) => ({ userId: t.slice(2), exp: 99 }),
 };
-
-const rejection = (p: Promise<unknown>) =>
-  p.then(
-    () => new Error('did not reject'),
-    (e: unknown) => e,
-  );
 
 describe('auth use cases', () => {
   it('login rejects bad credentials with INVALID_CREDENTIALS', async () => {
