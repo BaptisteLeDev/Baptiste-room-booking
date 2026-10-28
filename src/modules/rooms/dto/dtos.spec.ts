@@ -1,14 +1,11 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
-import {
-  check,
-  props,
-} from '../../../../common/validation/dto-test-helpers.js';
+import { check, props } from '../../../common/validation/dto-test-helpers.js';
 import type {
   AvailabilityUpdateRequest,
   RoomCreateRequest,
   RoomUpdateRequest,
-} from '../../../../contract.js';
+} from '../../../contract.js';
 import { CreateRoomDto } from './create-room.dto.js';
 import { ListRoomsQueryDto } from './list-rooms-query.dto.js';
 import { UpdateAvailabilityDto } from './update-availability.dto.js';

@@ -19,7 +19,7 @@ Gère le catalogue des salles et leurs plages de disponibilité. Contrat : `core
 ## Provenance des données
 
 PostgreSQL, tables `rooms` et `availabilities`, via TypeORM (`RoomEntity`, `AvailabilityEntity`).
-Couches : `domain/` (entité `Room` avec invariants, port `IRoomRepository`, token `ROOM_REPOSITORY`), `application/use-cases/` (un use case par action), `infra/` (adaptateur `TypeOrmRoomRepository`, mapper, entités TypeORM, DTO HTTP dans `infra/dto/`), câblage dans `rooms.module.ts`.
+Couches : `domain/` (entité `Room` avec invariants, port `IRoomRepository`, token `ROOM_REPOSITORY`), `application/use-cases/` (un use case par action), `infra/` (adaptateur `TypeOrmRoomRepository`, mapper, entités TypeORM, DTO HTTP dans `dto/` (racine du module)), câblage dans `rooms.module.ts`.
 
 ## Invariants
 

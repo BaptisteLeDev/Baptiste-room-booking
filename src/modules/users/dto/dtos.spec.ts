@@ -3,8 +3,8 @@ import {
   check,
   LONG_EMAIL,
   props,
-} from '../../../../common/validation/dto-test-helpers.js';
-import type { UserUpdateRequest } from '../../../../contract.js';
+} from '../../../common/validation/dto-test-helpers.js';
+import type { UserUpdateRequest } from '../../../contract.js';
 import { UpdateUserDto } from './update-user.dto.js';
 
 describe('UpdateUserDto', () => {

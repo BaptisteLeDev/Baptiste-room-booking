@@ -16,8 +16,8 @@ import { DeleteUserUseCase } from './application/use-cases/delete-user.use-case.
 import { GetUserUseCase } from './application/use-cases/get-user.use-case.js';
 import { ListUsersUseCase } from './application/use-cases/list-users.use-case.js';
 import { UpdateUserUseCase } from './application/use-cases/update-user.use-case.js';
-import { ListUsersQueryDto } from './infra/dto/list-users-query.dto.js';
-import { UpdateUserDto } from './infra/dto/update-user.dto.js';
+import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
+import { UpdateUserDto } from './dto/update-user.dto.js';
 
 @Controller('users')
 export class UsersController {

@@ -22,11 +22,11 @@ import { GetRoomUseCase } from './application/use-cases/get-room.use-case.js';
 import { ListRoomsUseCase } from './application/use-cases/list-rooms.use-case.js';
 import { SetRoomAvailabilityUseCase } from './application/use-cases/set-room-availability.use-case.js';
 import { UpdateRoomUseCase } from './application/use-cases/update-room.use-case.js';
-import { CreateRoomDto } from './infra/dto/create-room.dto.js';
-import { GetRoomAvailabilityQueryDto } from './infra/dto/get-room-availability-query.dto.js';
-import { ListRoomsQueryDto } from './infra/dto/list-rooms-query.dto.js';
-import { UpdateAvailabilityDto } from './infra/dto/update-availability.dto.js';
-import { UpdateRoomDto } from './infra/dto/update-room.dto.js';
+import { CreateRoomDto } from './dto/create-room.dto.js';
+import { GetRoomAvailabilityQueryDto } from './dto/get-room-availability-query.dto.js';
+import { ListRoomsQueryDto } from './dto/list-rooms-query.dto.js';
+import { UpdateAvailabilityDto } from './dto/update-availability.dto.js';
+import { UpdateRoomDto } from './dto/update-room.dto.js';
 
 @Controller('rooms')
 export class RoomsController {

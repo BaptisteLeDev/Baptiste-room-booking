@@ -1,8 +1,8 @@
 import { IsEmail, IsIn, IsString, MaxLength } from 'class-validator';
-import { enumValues } from '../../../../common/validation/enum-values.js';
-import { ValidateIfDefined } from '../../../../common/validation/validate-if-defined.js';
-import { MinProperties } from '../../../../common/validation/min-properties.js';
-import type { UserRole, UserUpdateRequest } from '../../../../contract.js';
+import { enumValues } from '../../../common/validation/enum-values.js';
+import { ValidateIfDefined } from '../../../common/validation/validate-if-defined.js';
+import { MinProperties } from '../../../common/validation/min-properties.js';
+import type { UserRole, UserUpdateRequest } from '../../../contract.js';
 
 const USER_ROLES = enumValues<UserRole>()([
   'CLIENT',

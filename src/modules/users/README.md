@@ -4,10 +4,10 @@ Gère les comptes et leurs rôles. Contrat : `core/openapi.yml` (`/users*`, `Use
 
 ## Langage
 
-| Terme métier | Code                                             | Sens                                                                      |
-| ------------ | ------------------------------------------------ | ------------------------------------------------------------------------- |
-| Utilisateur  | `User` / `UserSnapshot`                          | Compte avec nom, e-mail unique et rôle. `toSnapshot` n'expose pas le hash. |
-| Rôle         | `Role` (`CLIENT`, `GESTIONNAIRE`, `ADMINISTRATEUR`) | `CLIENT` par défaut à la création.                                        |
+| Terme métier | Code                                                | Sens                                                                       |
+| ------------ | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| Utilisateur  | `User` / `UserSnapshot`                             | Compte avec nom, e-mail unique et rôle. `toSnapshot` n'expose pas le hash. |
+| Rôle         | `Role` (`CLIENT`, `GESTIONNAIRE`, `ADMINISTRATEUR`) | `CLIENT` par défaut à la création.                                         |
 
 ## Frontières
 
@@ -17,7 +17,7 @@ Gère les comptes et leurs rôles. Contrat : `core/openapi.yml` (`/users*`, `Use
 
 ## Provenance des données
 
-PostgreSQL, table `users`, via `TypeOrmUserRepository` (`UserEntity`, mapper `user.mapper.ts`). Couches : `domain/entities/user.entity.ts`, `domain/repositories/`, `application/use-cases/` (un par action, `load-user.ts` pour le 404), `infra/` (adaptateur, mapper, entité TypeORM, DTO dans `infra/dto/`), câblage dans `users.module.ts` et `users-persistence.module.ts`.
+PostgreSQL, table `users`, via `TypeOrmUserRepository` (`UserEntity`, mapper `user.mapper.ts`). Couches : `domain/entities/user.entity.ts`, `domain/repositories/`, `application/use-cases/` (un par action, `load-user.ts` pour le 404), `infra/` (adaptateur, mapper, entité TypeORM, DTO dans `dto/`), câblage dans `users.module.ts` et `users-persistence.module.ts`.
 
 ## Invariants
 
