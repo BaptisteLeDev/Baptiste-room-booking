@@ -11,7 +11,11 @@ import type {
   RegisterRequest,
   User,
 } from '../../contract.js';
-import { emailUsed, normalizeEmail, toUser } from '../users/user.mapper.js';
+import {
+  emailUsed,
+  normalizeEmail,
+} from '../users/domain/entities/user.entity.js';
+import { toUser } from '../users/infra/user.mapper.js';
 import { UserEntity } from '../users/infra/user.entity.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { RevokedTokens } from './revoked-tokens.js';
