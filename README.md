@@ -47,7 +47,12 @@ $ pnpm db:generate src/database/migrations/Name
 
 # revert the last migration
 $ pnpm db:revert
+
+# load the frontend mocks (frontend/mock/data/*.json), idempotent
+$ pnpm db:seed
 ```
+
+Seeded users log in with `SEED_PASSWORD` [`password123`]. `SEED_MOCK_DIR` [`../frontend/mock/data`] is resolved from the current directory. Active rooms get 14 days of availability slots from today.
 
 Connection env vars, read by `src/database/data-source.ts` (defaults in brackets):
 

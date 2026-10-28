@@ -11,6 +11,7 @@
     "db:up": "docker compose up -d postgres",
     "db:migrate": "nest build && typeorm migration:run -d dist/database/data-source.js",
     "db:revert": "nest build && typeorm migration:revert -d dist/database/data-source.js",
+    "db:seed": "nest build && node dist/database/seed.js",
     "db:generate": "nest build && typeorm migration:generate -d dist/database/data-source.js",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

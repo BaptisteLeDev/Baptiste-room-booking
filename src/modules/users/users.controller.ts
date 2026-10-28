@@ -12,20 +12,28 @@ import {
 } from '@nestjs/common';
 import type { PaginatedUsers, User } from '../../contract.js';
 import { CurrentUserId } from '../auth/current-user.decorator.js';
+import { DeleteUserUseCase } from './application/use-cases/delete-user.use-case.js';
+import { GetUserUseCase } from './application/use-cases/get-user.use-case.js';
+import { ListUsersUseCase } from './application/use-cases/list-users.use-case.js';
+import { UpdateUserUseCase } from './application/use-cases/update-user.use-case.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-import { UsersService } from './users.service.js';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly listUsersUseCase: ListUsersUseCase,
+    private readonly getUserUseCase: GetUserUseCase,
+    private readonly updateUserUseCase: UpdateUserUseCase,
+    private readonly deleteUserUseCase: DeleteUserUseCase,
+  ) {}
 
   @Get()
   list(
     @CurrentUserId() requesterId: string,
     @Query() query: ListUsersQueryDto,
   ): Promise<PaginatedUsers> {
-    return this.users.list(requesterId, query);
+    return this.listUsersUseCase.execute(requesterId, query);
   }
 
   @Get(':userId')
@@ -33,7 +41,7 @@ export class UsersController {
     @CurrentUserId() requesterId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<User> {
-    return this.users.get(requesterId, userId);
+    return this.getUserUseCase.execute(requesterId, userId);
   }
 
   @Patch(':userId')
@@ -42,7 +50,7 @@ export class UsersController {
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() body: UpdateUserDto,
   ): Promise<User> {
-    return this.users.update(requesterId, userId, body);
+    return this.updateUserUseCase.execute(requesterId, userId, body);
   }
 
   @Delete(':userId')
@@ -51,6 +59,6 @@ export class UsersController {
     @CurrentUserId() requesterId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<void> {
-    return this.users.remove(requesterId, userId);
+    return this.deleteUserUseCase.execute(requesterId, userId);
   }
 }

@@ -8,8 +8,8 @@ import {
   PrimaryGeneratedColumn,
   type Relation,
 } from 'typeorm';
-import { ReservationEntity } from '../../reservations/infra/reservation.entity.js';
 import { decimal } from '../../../database/decimal.transformer.js';
+import { ReservationRow } from './reservation-row.entity.js';
 
 @Entity('payments')
 @Check(`"status" IN ('PENDING','PAID','FAILED','REFUNDED')`)
@@ -17,9 +17,10 @@ export class PaymentEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @OneToOne(() => ReservationEntity)
+  // OneToOne -> UNIQUE REL_ + FK as in InitSchema; guards PAYMENT_ALREADY_EXISTS.
+  @OneToOne(() => ReservationRow)
   @JoinColumn({ name: 'reservation_id' })
-  reservation!: Relation<ReservationEntity>;
+  reservation!: Relation<ReservationRow>;
 
   @Column({ type: 'uuid', name: 'reservation_id' })
   reservationId!: string;

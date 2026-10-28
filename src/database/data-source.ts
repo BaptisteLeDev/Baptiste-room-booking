@@ -3,7 +3,12 @@ import { UserEntity } from '../modules/users/infra/user.entity.js';
 import { RoomEntity } from '../modules/rooms/infra/room.entity.js';
 import { AvailabilityEntity } from '../modules/rooms/infra/availability.entity.js';
 import { ReservationEntity } from '../modules/reservations/infra/reservation.entity.js';
+import { RoomRow } from '../modules/reservations/infra/room-row.entity.js';
+import { UserRow } from '../modules/reservations/infra/user-row.entity.js';
+import { AdminReservationRow } from '../modules/admin/infra/admin-reservation-row.entity.js';
 import { PaymentEntity } from '../modules/payments/infra/payment.entity.js';
+import { ReservationRow } from '../modules/payments/infra/reservation-row.entity.js';
+import { OwnerRow } from '../modules/rooms/infra/owner-row.entity.js';
 import { InitSchema1793106343582 } from './migrations/1793106343582-InitSchema.js';
 import { AddAvailabilityAvailable1793106500000 } from './migrations/1793106500000-AddAvailabilityAvailable.js';
 import { SeedDemoUser1793106400000 } from './migrations/1793106400000-SeedDemoUser.js';
@@ -21,6 +26,11 @@ export const dataSourceOptions: DataSourceOptions = {
     AvailabilityEntity,
     ReservationEntity,
     PaymentEntity,
+    AdminReservationRow,
+    RoomRow,
+    UserRow,
+    ReservationRow,
+    OwnerRow,
   ],
   migrations: [
     InitSchema1793106343582,

@@ -1,23 +1,27 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { IS_PUBLIC } from './public.decorator.js';
-import { RevokedTokens } from './revoked-tokens.js';
+import {
+  REVOKED_TOKEN_STORE,
+  type RevokedTokenStore,
+} from './domain/revoked-token-store.js';
+import { TOKEN_ISSUER, type TokenIssuer } from './domain/token-issuer.js';
 
 export type AuthenticatedRequest = Request & { userId: string; token: string };
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
-    private readonly jwt: JwtService,
+    @Inject(TOKEN_ISSUER) private readonly tokens: TokenIssuer,
     private readonly reflector: Reflector,
-    private readonly revoked: RevokedTokens,
+    @Inject(REVOKED_TOKEN_STORE) private readonly revoked: RevokedTokenStore,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,16 +34,17 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const header = request.headers.authorization;
     const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
-    if (!token || this.revoked.has(token)) throw new UnauthorizedException();
+    if (!token || this.revoked.isRevoked(token))
+      throw new UnauthorizedException();
 
-    let payload: { sub: string };
+    let userId: string;
     try {
-      payload = await this.jwt.verifyAsync<{ sub: string }>(token);
+      ({ userId } = await this.tokens.verify(token));
     } catch {
       throw new UnauthorizedException();
     }
 
-    request.userId = payload.sub;
+    request.userId = userId;
     request.token = token;
     return true;
   }

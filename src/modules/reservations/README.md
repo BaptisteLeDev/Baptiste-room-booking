@@ -31,12 +31,13 @@ Toute autre transition : 409 `RESERVATION_STATUS_CONFLICT`.
 ## Frontières
 
 - Possède les réservations.
-- Lit les conditions d'une salle via le port `RoomCatalog` (`domain/room-catalog.ts`). Adaptateur : `TypeOrmRoomCatalog`, lit la table `rooms`.
-- Utilisateur courant : constante issue de `userFixture` dans le contrôleur, en attendant un guard d'authentification.
+- Lit les conditions et le propriétaire d'une salle via le port `RoomCatalog` (`domain/room-catalog.ts`, `ROOM_CATALOG`). Adaptateur : `TypeOrmRoomCatalog`, lit la table `rooms` via sa propre vue `RoomRow` (`infra/room-row.entity.ts`, `synchronize: false`), sans dépendre de `rooms/infra`.
+- Utilisateur courant : `@CurrentUserId()`, posé par `AuthGuard` (Auth). Les droits passent par `AuthorizationService` et `ReservationAccess` (`application/reservation-access.ts`) : client, gestionnaire de la salle ou admin ; un étranger reçoit 404.
+- Référence `users` via `UserRow` (`infra/user-row.entity.ts`, clé étrangère seulement, `synchronize: false`).
 
 ## Provenance des données
 
-PostgreSQL, table `reservations`, via `TypeOrmReservationRepository` (`ReservationEntity`). Contrainte d'exclusion `no_overlap_active` : un conflit de créneau remonte en 409 `SLOT_UNAVAILABLE`. Port : `RESERVATION_REPOSITORY`. `InMemoryReservationRepository` reste pour les tests unitaires.
+PostgreSQL, table `reservations`, via `TypeOrmReservationRepository` (`ReservationEntity`). Contrainte d'exclusion `no_overlap_active` : un conflit de créneau remonte en 409 `SLOT_UNAVAILABLE`. Port : `RESERVATION_REPOSITORY`. Un use case par action dans `application/use-cases/`. `InMemoryReservationRepository` (`test/helpers/`) sert aux tests unitaires.
 
 ## Invariants
 
@@ -50,3 +51,5 @@ PostgreSQL, table `reservations`, via `TypeOrmReservationRepository` (`Reservati
 ## ADR
 
 - [0001 - Verrouiller la ligne salle pour réserver](../../../docs/decisions/0001-lock-room-row-for-booking.md)
+- [0002 - Ports à jeton](../../../docs/decisions/0002-ports-a-jeton.md)
+- [0003 - Ports inter-contextes](../../../docs/decisions/0003-ports-inter-contextes.md)

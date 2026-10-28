@@ -1,13 +1,20 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module.js';
-import { UserEntity } from './infra/user.entity.js';
+import { DeleteUserUseCase } from './application/use-cases/delete-user.use-case.js';
+import { GetUserUseCase } from './application/use-cases/get-user.use-case.js';
+import { ListUsersUseCase } from './application/use-cases/list-users.use-case.js';
+import { UpdateUserUseCase } from './application/use-cases/update-user.use-case.js';
 import { UsersController } from './users.controller.js';
-import { UsersService } from './users.service.js';
+import { UsersPersistenceModule } from './users-persistence.module.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity]), AuthModule],
+  imports: [UsersPersistenceModule, AuthModule],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [
+    ListUsersUseCase,
+    GetUserUseCase,
+    UpdateUserUseCase,
+    DeleteUserUseCase,
+  ],
 })
 export class UsersModule {}

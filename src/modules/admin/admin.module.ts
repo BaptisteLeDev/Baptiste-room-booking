@@ -1,18 +1,20 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module.js';
-import { ReservationEntity } from '../reservations/infra/reservation.entity.js';
-import { RoomEntity } from '../rooms/infra/room.entity.js';
-import { UserEntity } from '../users/infra/user.entity.js';
 import { AdminController } from './admin.controller.js';
-import { AdminService } from './admin.service.js';
+import { ListAdminReservationsUseCase } from './application/use-cases/list-admin-reservations.use-case.js';
+import { StatisticsUseCase } from './application/use-cases/statistics.use-case.js';
+import { ADMIN_QUERY } from './domain/repositories/admin-query.port.js';
+import { AdminReservationRow } from './infra/admin-reservation-row.entity.js';
+import { TypeOrmAdminQuery } from './infra/typeorm-admin-query.js';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([ReservationEntity, RoomEntity, UserEntity]),
-    AuthModule,
-  ],
+  imports: [TypeOrmModule.forFeature([AdminReservationRow]), AuthModule],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [
+    ListAdminReservationsUseCase,
+    StatisticsUseCase,
+    { provide: ADMIN_QUERY, useClass: TypeOrmAdminQuery },
+  ],
 })
 export class AdminModule {}

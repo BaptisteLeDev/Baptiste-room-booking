@@ -8,9 +8,9 @@ import {
   PrimaryColumn,
   type Relation,
 } from 'typeorm';
-import { UserEntity } from '../../users/infra/user.entity.js';
-import { RoomEntity } from '../../rooms/infra/room.entity.js';
 import { decimal } from '../../../database/decimal.transformer.js';
+import { RoomRow } from './room-row.entity.js';
+import { UserRow } from './user-row.entity.js';
 
 @Entity('reservations')
 @Check('"end_time" > "start_time"')
@@ -23,16 +23,16 @@ export class ReservationEntity {
   @PrimaryColumn({ type: 'uuid' })
   id!: string;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserRow)
   @JoinColumn({ name: 'user_id' })
-  user!: Relation<UserEntity>;
+  user!: Relation<UserRow>;
 
   @Column({ type: 'uuid', name: 'user_id' })
   userId!: string;
 
-  @ManyToOne(() => RoomEntity, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => RoomRow, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'room_id' })
-  room!: Relation<RoomEntity>;
+  room!: Relation<RoomRow>;
 
   @Column({ type: 'uuid', name: 'room_id' })
   roomId!: string;

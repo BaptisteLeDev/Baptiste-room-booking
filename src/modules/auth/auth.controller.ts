@@ -13,35 +13,45 @@ import { Public } from './public.decorator.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
-import { AuthService } from './auth.service.js';
+import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case.js';
+import { LoginUseCase } from './application/use-cases/login.use-case.js';
+import { LogoutUseCase } from './application/use-cases/logout.use-case.js';
+import { MeUseCase } from './application/use-cases/me.use-case.js';
+import { RegisterUseCase } from './application/use-cases/register.use-case.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly registerUser: RegisterUseCase,
+    private readonly loginUser: LoginUseCase,
+    private readonly logoutUser: LogoutUseCase,
+    private readonly me: MeUseCase,
+    private readonly changeUserPassword: ChangePasswordUseCase,
+  ) {}
 
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   register(@Body() body: RegisterDto): Promise<User> {
-    return this.auth.register(body);
+    return this.registerUser.execute(body);
   }
 
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   login(@Body() body: LoginDto): Promise<AuthResponse> {
-    return this.auth.login(body);
+    return this.loginUser.execute(body);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   logout(@CurrentToken() token: string): Promise<void> {
-    return this.auth.logout(token);
+    return this.logoutUser.execute(token);
   }
 
   @Get('me')
   getCurrentUser(@CurrentUserId() userId: string): Promise<User> {
-    return this.auth.me(userId);
+    return this.me.execute(userId);
   }
 
   @Patch('password')
@@ -50,6 +60,6 @@ export class AuthController {
     @CurrentUserId() userId: string,
     @Body() body: ChangePasswordDto,
   ): Promise<void> {
-    return this.auth.changePassword(userId, body);
+    return this.changeUserPassword.execute(userId, body);
   }
 }

@@ -67,7 +67,7 @@ describe('Reservations routes (e2e)', () => {
 
   beforeEach(async () => {
     await resetDatabase(app);
-    token = await loginAs(app);
+    token = await loginAs(app, undefined, 'GESTIONNAIRE');
     roomId = await createRoom();
   });
 
@@ -324,6 +324,27 @@ describe('Reservations routes (e2e)', () => {
       .post(`/api/reservations/${r.id}/confirm`)
       .expect(409);
     expect(res.body).toMatchObject({ code: 'RESERVATION_STATUS_CONFLICT' });
+  });
+
+  it('booking client confirm -> 403, stranger GET -> 404', async () => {
+    const as = async (email: string) => {
+      await request(app.getHttpServer())
+        .post('/api/auth/register')
+        .send({ firstName: 'A', lastName: 'B', email, password: 'longenough' })
+        .expect(201);
+      const t = await loginAs(app, email);
+      return () =>
+        request.agent(app.getHttpServer()).set('Authorization', `Bearer ${t}`);
+    };
+    const client = await as('client@example.com');
+    const stranger = await as('stranger@example.com');
+    const res = await client()
+      .post('/api/reservations')
+      .send(payload())
+      .expect(201);
+    const { id } = res.body as Reservation;
+    await client().post(`/api/reservations/${id}/confirm`).expect(403);
+    await stranger().get(`/api/reservations/${id}`).expect(404);
   });
 
   it('POST /:id/reject -> 200 REJECTED', async () => {

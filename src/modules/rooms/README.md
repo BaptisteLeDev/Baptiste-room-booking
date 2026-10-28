@@ -14,11 +14,12 @@ Gère le catalogue des salles et leurs plages de disponibilité. Contrat : `core
 
 - Possède les salles et leurs plages de disponibilité.
 - Lit les réservations (table `reservations`) pour calculer `available` et pour refuser la suppression d'une salle qui en a. Aucun appel au contexte Réservations.
-- Propriétaire : utilisateur de démo `userFixture`, en attendant un guard d'authentification.
+- Propriétaire : utilisateur courant `@CurrentUserId()`, posé par `AuthGuard` (Auth). Clé étrangère vers `users` via `OwnerRow` (`infra/owner-row.entity.ts`, `synchronize: false`), sans dépendre de `users/infra`.
 
 ## Provenance des données
 
-PostgreSQL, tables `rooms` et `availabilities`, via TypeORM (`RoomEntity`, `AvailabilityEntity`). Pas de domaine séparé : CRUD direct.
+PostgreSQL, tables `rooms` et `availabilities`, via TypeORM (`RoomEntity`, `AvailabilityEntity`).
+Couches : `domain/` (entité `Room` avec invariants, port `IRoomRepository`, token `ROOM_REPOSITORY`), `application/use-cases/` (un use case par action), `infra/` (adaptateur `TypeOrmRoomRepository`, mapper, entités TypeORM, DTO HTTP dans `dto/` (racine du module)), câblage dans `rooms.module.ts`.
 
 ## Invariants
 
@@ -33,4 +34,4 @@ PostgreSQL, tables `rooms` et `availabilities`, via TypeORM (`RoomEntity`, `Avai
 
 ## ADR
 
-Aucun.
+- [0002 - Ports à jeton](../../../docs/decisions/0002-ports-a-jeton.md)

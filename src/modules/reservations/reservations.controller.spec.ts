@@ -1,9 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthorizationService } from '../auth/authorization.service.js';
-import { ReservationsService } from './application/reservations.service.js';
+import { AuthorizationService } from '../auth/application/authorization.service.js';
+import { ReservationAccess } from './application/reservation-access.js';
+import { CancelReservationUseCase } from './application/use-cases/cancel-reservation.use-case.js';
+import { ConfirmReservationUseCase } from './application/use-cases/confirm-reservation.use-case.js';
+import { CreateReservationUseCase } from './application/use-cases/create-reservation.use-case.js';
+import { GetReservationUseCase } from './application/use-cases/get-reservation.use-case.js';
+import { ListReservationsUseCase } from './application/use-cases/list-reservations.use-case.js';
+import { RejectReservationUseCase } from './application/use-cases/reject-reservation.use-case.js';
+import { UpdateReservationUseCase } from './application/use-cases/update-reservation.use-case.js';
 import { RESERVATION_REPOSITORY } from './domain/reservation-repository.js';
 import { ROOM_CATALOG } from './domain/room-catalog.js';
-import { InMemoryReservationRepository } from './infra/in-memory-reservation.repository.js';
+import { InMemoryReservationRepository } from '../../../test/helpers/in-memory-reservation.repository.js';
 import { ReservationsController } from './reservations.controller.js';
 
 describe('ReservationsController', () => {
@@ -13,7 +20,14 @@ describe('ReservationsController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ReservationsController],
       providers: [
-        ReservationsService,
+        ReservationAccess,
+        CancelReservationUseCase,
+        ConfirmReservationUseCase,
+        CreateReservationUseCase,
+        GetReservationUseCase,
+        ListReservationsUseCase,
+        RejectReservationUseCase,
+        UpdateReservationUseCase,
         {
           provide: RESERVATION_REPOSITORY,
           useClass: InMemoryReservationRepository,
