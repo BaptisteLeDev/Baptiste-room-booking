@@ -7,8 +7,8 @@ import {
   IsUrl,
   Min,
 } from 'class-validator';
-import { ValidateIfDefined } from '../../../common/validation/validate-if-defined.js';
-import type { RoomCreateRequest } from '../../../contract.js';
+import { ValidateIfDefined } from '../../../../common/validation/validate-if-defined.js';
+import type { RoomCreateRequest } from '../../../../contract.js';
 
 export class CreateRoomDto implements RoomCreateRequest {
   @IsString()

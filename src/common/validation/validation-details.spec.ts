@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { CreateReservationDto } from '../../modules/reservations/dto/create-reservation.dto.js';
-import { UpdateAvailabilityDto } from '../../modules/rooms/dto/update-availability.dto.js';
+import { UpdateAvailabilityDto } from '../../modules/rooms/infra/dto/update-availability.dto.js';
 import { check } from './dto-test-helpers.js';
 import { validationDetails } from './validation-details.js';
 

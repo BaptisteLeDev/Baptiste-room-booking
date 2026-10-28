@@ -1,21 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { hasPgCode } from '../../common/database/pg-error.js';
-import { DomainError } from '../../common/domain-error.js';
-import { notFound } from '../../common/not-found.js';
+import { hasPgCode } from '../../../common/database/pg-error.js';
+import { DomainError } from '../../../common/domain-error.js';
+import type { Room } from '../domain/entities/room.entity.js';
 import type {
+  AvailabilityQuery,
   AvailabilitySlot,
-  AvailabilityUpdateRequest,
-  PaginatedRooms,
-  Room,
-  RoomCreateRequest,
-  RoomStatus,
-  RoomUpdateRequest,
-} from '../../contract.js';
-import { AuthorizationService } from '../auth/authorization.service.js';
-import { ListRoomsQueryDto } from './dto/list-rooms-query.dto.js';
-import { RoomEntity } from './infra/room.entity.js';
+  IRoomRepository,
+  RoomListFilter,
+  RoomPage,
+} from '../domain/repositories/room.repository.interface.js';
+import { RoomEntity } from './room.entity.js';
+import { toEntity, toRoom } from './room.mapper.js';
 
 const FK_VIOLATION = '23503';
 
@@ -37,33 +34,25 @@ WHERE a.room_id = $1
   AND ($4::time IS NULL OR (a.start_time AT TIME ZONE 'Europe/Paris')::time < $4::time)
 ORDER BY a.start_time`;
 
-function toRoom(e: RoomEntity): Room {
-  return {
-    id: e.id,
-    name: e.name,
-    ...(e.description !== null && { description: e.description }),
-    capacity: e.capacity,
-    location: e.location,
-    equipment: e.equipment,
-    pricePerHour: e.pricePerHour,
-    status: e.status as RoomStatus,
-    ownerId: e.ownerId,
-    ...(e.imageUrl !== null && { imageUrl: e.imageUrl }),
-    createdAt: e.createdAt.toISOString(),
-  };
-}
-
 @Injectable()
-export class RoomsService {
+export class TypeOrmRoomRepository implements IRoomRepository {
   constructor(
     @InjectRepository(RoomEntity)
-    private readonly rooms: Repository<RoomEntity>,
+    private readonly rows: Repository<RoomEntity>,
     private readonly dataSource: DataSource,
-    private readonly authorization: AuthorizationService,
   ) {}
 
-  async list(q: ListRoomsQueryDto): Promise<PaginatedRooms> {
-    const qb = this.rooms
+  async save(room: Room): Promise<Room> {
+    return toRoom(await this.rows.save(toEntity(room.toSnapshot())));
+  }
+
+  async findById(id: string): Promise<Room | null> {
+    const row = await this.rows.findOneBy({ id });
+    return row ? toRoom(row) : null;
+  }
+
+  async findAll(q: RoomListFilter): Promise<RoomPage> {
+    const qb = this.rows
       .createQueryBuilder('r')
       .orderBy('r.createdAt', 'DESC')
       .addOrderBy('r.id')
@@ -121,47 +110,9 @@ export class RoomsService {
     };
   }
 
-  async create(userId: string, body: RoomCreateRequest): Promise<Room> {
-    await this.authorization.assertManager(userId);
-    const saved = await this.rooms.save(
-      this.rooms.create({
-        ownerId: userId,
-        name: body.name,
-        description: body.description ?? null,
-        capacity: body.capacity,
-        location: body.location,
-        equipment: body.equipment ?? [],
-        pricePerHour: body.pricePerHour,
-        status: 'ACTIVE',
-        imageUrl: body.imageUrl ?? null,
-      }),
-    );
-    return toRoom(saved);
-  }
-
-  async get(id: string): Promise<Room> {
-    return toRoom(await this.load(id));
-  }
-
-  async update(
-    id: string,
-    userId: string,
-    body: RoomUpdateRequest,
-  ): Promise<Room> {
-    const room = await this.loadManaged(id, userId);
-    Object.assign(
-      room,
-      Object.fromEntries(
-        Object.entries(body).filter(([, v]) => v !== undefined),
-      ),
-    );
-    return toRoom(await this.rooms.save(room));
-  }
-
-  async delete(id: string, userId: string): Promise<void> {
-    await this.loadManaged(id, userId);
+  async delete(id: string): Promise<void> {
     try {
-      await this.rooms.delete(id);
+      await this.rows.delete(id);
     } catch (e) {
       if (hasPgCode(e, FK_VIOLATION)) {
         throw new DomainError(
@@ -174,11 +125,10 @@ export class RoomsService {
     }
   }
 
-  async getAvailability(
+  async findAvailability(
     roomId: string,
-    q: { date: string; startTime?: string; endTime?: string },
+    q: AvailabilityQuery,
   ): Promise<AvailabilitySlot[]> {
-    await this.load(roomId);
     return this.dataSource.query<AvailabilitySlot[]>(AVAILABILITY_SQL, [
       roomId,
       q.date,
@@ -187,41 +137,27 @@ export class RoomsService {
     ]);
   }
 
-  async setAvailability(
+  async replaceAvailability(
     roomId: string,
-    userId: string,
-    body: AvailabilityUpdateRequest,
-  ): Promise<AvailabilitySlot[]> {
-    await this.loadManaged(roomId, userId);
+    date: string,
+    slots: AvailabilitySlot[],
+  ): Promise<void> {
     await this.dataSource.transaction(async (tx) => {
       await tx.query(
         `DELETE FROM availabilities
          WHERE room_id = $1 AND (start_time AT TIME ZONE 'Europe/Paris')::date = $2::date`,
-        [roomId, body.date],
+        [roomId, date],
       );
-      for (const s of body.slots) {
+      for (const s of slots) {
         await tx.query(
           `INSERT INTO availabilities (room_id, start_time, end_time, available)
            VALUES ($1,
              ($2::date + $3::time) AT TIME ZONE 'Europe/Paris',
              ($2::date + $4::time) AT TIME ZONE 'Europe/Paris',
              $5)`,
-          [roomId, body.date, s.startTime, s.endTime, s.available],
+          [roomId, date, s.startTime, s.endTime, s.available],
         );
       }
     });
-    return this.getAvailability(roomId, { date: body.date });
-  }
-
-  private async load(id: string): Promise<RoomEntity> {
-    const room = await this.rooms.findOneBy({ id });
-    if (!room) throw notFound();
-    return room;
-  }
-
-  private async loadManaged(id: string, userId: string): Promise<RoomEntity> {
-    const room = await this.load(id);
-    await this.authorization.assertOwnerOrAdmin(userId, room.ownerId);
-    return room;
   }
 }
