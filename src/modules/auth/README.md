@@ -4,13 +4,13 @@ Authentification (inscription, connexion, jeton) et contrôle d'accès par rôle
 
 ## Langage
 
-| Terme métier         | Code                                  | Sens                                                              |
-| -------------------- | ------------------------------------- | ----------------------------------------------------------------- |
-| Jeton                | `TokenIssuer` (`sign`, `verify`)      | JWT signé avec `JWT_SECRET`, porte l'id utilisateur.              |
-| Jeton révoqué        | `RevokedTokenStore`                   | Jeton invalidé par la déconnexion jusqu'à son expiration.         |
-| Hash de mot de passe | `PasswordHasher`                      | `hash` / `verify`.                                                |
-| Autorisation         | `AuthorizationService`                | `assertAdmin`, `assertManager`, `assertOwnerOrAdmin`, `requireSelfOrAdmin`. |
-| Route publique       | `@Public()`                           | Sans ce décorateur, `AuthGuard` (global) exige un jeton Bearer.   |
+| Terme métier         | Code                             | Sens                                                                        |
+| -------------------- | -------------------------------- | --------------------------------------------------------------------------- |
+| Jeton                | `TokenIssuer` (`sign`, `verify`) | JWT signé avec `JWT_SECRET`, porte l'id utilisateur.                        |
+| Jeton révoqué        | `RevokedTokenStore`              | Jeton invalidé par la déconnexion jusqu'à son expiration.                   |
+| Hash de mot de passe | `PasswordHasher`                 | `hash` / `verify`.                                                          |
+| Autorisation         | `AuthorizationService`           | `assertAdmin`, `assertManager`, `assertOwnerOrAdmin`, `requireSelfOrAdmin`. |
+| Route publique       | `@Public()`                      | Sans ce décorateur, `AuthGuard` (global) exige un jeton Bearer.             |
 
 ## Frontières
 

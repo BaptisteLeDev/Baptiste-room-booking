@@ -4,12 +4,12 @@ Enregistre le paiement d'une réservation. Contrat : `core/openapi.yml` (`/payme
 
 ## Langage
 
-| Terme métier         | Code                                       | Sens                                                                         |
-| -------------------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
-| Paiement             | `Payment` / `PaymentSnapshot`              | Règlement lié à une réservation, avec montant, devise et statut.             |
-| Statuts              | `PENDING`, `PAID`, `FAILED`, `REFUNDED`    | Seul `PENDING` est produit aujourd'hui (le fournisseur est différé).        |
-| Fournisseur          | `PaymentProvider` (`initiate`)             | Service externe de paiement. Adaptateur actuel : `DeferredPaymentProvider`.  |
-| Réservation payable  | `PayableReservation` (`ReservationCatalog`) | Ce que Paiements lit de Réservations : id, utilisateur, montant, devise.     |
+| Terme métier        | Code                                        | Sens                                                                        |
+| ------------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
+| Paiement            | `Payment` / `PaymentSnapshot`               | Règlement lié à une réservation, avec montant, devise et statut.            |
+| Statuts             | `PENDING`, `PAID`, `FAILED`, `REFUNDED`     | Seul `PENDING` est produit aujourd'hui (le fournisseur est différé).        |
+| Fournisseur         | `PaymentProvider` (`initiate`)              | Service externe de paiement. Adaptateur actuel : `DeferredPaymentProvider`. |
+| Réservation payable | `PayableReservation` (`ReservationCatalog`) | Ce que Paiements lit de Réservations : id, utilisateur, montant, devise.    |
 
 ## Frontières
 

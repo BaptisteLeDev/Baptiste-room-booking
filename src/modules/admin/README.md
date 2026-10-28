@@ -4,11 +4,11 @@ Vues d'administration en lecture seule : liste globale des réservations et stat
 
 ## Langage
 
-| Terme métier | Code                           | Sens                                                                                   |
-| ------------ | ------------------------------ | -------------------------------------------------------------------------------------- |
-| Statistiques | `AdminStatistics`              | Totaux utilisateurs, salles, réservations (toutes, confirmées, annulées) et revenu.    |
-| Revenu       | `totalRevenue`                 | Somme de `totalAmount` des réservations `CONFIRMED` et `COMPLETED` de la période.      |
-| Modèle de lecture | `AdminQuery` (`ADMIN_QUERY`) | Port de requêtes dédié à l'admin, distinct des repositories des autres contextes.     |
+| Terme métier      | Code                         | Sens                                                                                |
+| ----------------- | ---------------------------- | ----------------------------------------------------------------------------------- |
+| Statistiques      | `AdminStatistics`            | Totaux utilisateurs, salles, réservations (toutes, confirmées, annulées) et revenu. |
+| Revenu            | `totalRevenue`               | Somme de `totalAmount` des réservations `CONFIRMED` et `COMPLETED` de la période.   |
+| Modèle de lecture | `AdminQuery` (`ADMIN_QUERY`) | Port de requêtes dédié à l'admin, distinct des repositories des autres contextes.   |
 
 ## Frontières
 
