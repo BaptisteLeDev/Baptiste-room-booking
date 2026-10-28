@@ -3,13 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { RoomTerms } from '../domain/reservation.js';
 import type { RoomCatalog } from '../domain/room-catalog.js';
-import { RoomEntity } from '../../rooms/infra/room.entity.js';
+import { RoomRow } from './room-row.entity.js';
 
 @Injectable()
 export class TypeOrmRoomCatalog implements RoomCatalog {
   constructor(
-    @InjectRepository(RoomEntity)
-    private readonly rooms: Repository<RoomEntity>,
+    @InjectRepository(RoomRow)
+    private readonly rooms: Repository<RoomRow>,
   ) {}
 
   async find(roomId: string): Promise<RoomTerms | undefined> {

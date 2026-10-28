@@ -3,6 +3,8 @@ import { UserEntity } from '../modules/users/infra/user.entity.js';
 import { RoomEntity } from '../modules/rooms/infra/room.entity.js';
 import { AvailabilityEntity } from '../modules/rooms/infra/availability.entity.js';
 import { ReservationEntity } from '../modules/reservations/infra/reservation.entity.js';
+import { RoomRow } from '../modules/reservations/infra/room-row.entity.js';
+import { UserRow } from '../modules/reservations/infra/user-row.entity.js';
 import { AdminReservationRow } from '../modules/admin/infra/admin-reservation-row.entity.js';
 import { PaymentEntity } from '../modules/payments/infra/payment.entity.js';
 import { InitSchema1793106343582 } from './migrations/1793106343582-InitSchema.js';
@@ -23,6 +25,8 @@ export const dataSourceOptions: DataSourceOptions = {
     ReservationEntity,
     PaymentEntity,
     AdminReservationRow,
+    RoomRow,
+    UserRow,
   ],
   migrations: [
     InitSchema1793106343582,

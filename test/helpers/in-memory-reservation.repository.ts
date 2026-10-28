@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import {
   Reservation,
   type ReservationSnapshot,
-} from '../domain/reservation.js';
-import type { TimeSlot } from '../domain/time-slot.js';
-import type { ReservationRepository } from '../domain/reservation-repository.js';
+} from '../../src/modules/reservations/domain/reservation.js';
+import type { TimeSlot } from '../../src/modules/reservations/domain/time-slot.js';
+import type { ReservationRepository } from '../../src/modules/reservations/domain/reservation-repository.js';
 
 @Injectable()
 export class InMemoryReservationRepository implements ReservationRepository {

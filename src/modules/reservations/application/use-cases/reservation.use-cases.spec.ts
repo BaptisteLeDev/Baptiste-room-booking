@@ -1,8 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DomainError } from '../../../common/domain-error.js';
-import type { RoomCatalog } from '../domain/room-catalog.js';
-import { InMemoryReservationRepository } from '../infra/in-memory-reservation.repository.js';
-import { ReservationsService } from './reservations.service.js';
+import { InMemoryReservationRepository } from '../../../../../test/helpers/in-memory-reservation.repository.js';
+import { DomainError } from '../../../../common/domain-error.js';
+import type { RoomCatalog } from '../../domain/room-catalog.js';
+import { ReservationAccess } from '../reservation-access.js';
+import { CancelReservationUseCase } from './cancel-reservation.use-case.js';
+import { ConfirmReservationUseCase } from './confirm-reservation.use-case.js';
+import { CreateReservationUseCase } from './create-reservation.use-case.js';
+import { GetReservationUseCase } from './get-reservation.use-case.js';
+import { ListReservationsUseCase } from './list-reservations.use-case.js';
+import { RejectReservationUseCase } from './reject-reservation.use-case.js';
+import { UpdateReservationUseCase } from './update-reservation.use-case.js';
 
 const catalog: RoomCatalog = {
   find: async (id) =>
@@ -29,8 +36,29 @@ const rejection = async (p: Promise<unknown>): Promise<DomainError> => {
   throw new Error('did not reject');
 };
 
-describe('ReservationsService', () => {
-  let svc: ReservationsService;
+const useCases = () => {
+  const repo = new InMemoryReservationRepository();
+  const access = new ReservationAccess(repo, catalog, authorization as never);
+  const create = new CreateReservationUseCase(repo, catalog);
+  const get = new GetReservationUseCase(access);
+  const update = new UpdateReservationUseCase(access);
+  const cancel = new CancelReservationUseCase(access);
+  const confirm = new ConfirmReservationUseCase(access);
+  const reject = new RejectReservationUseCase(access);
+  const list = new ListReservationsUseCase(repo);
+  return {
+    createReservation: create.execute.bind(create),
+    getReservation: get.execute.bind(get),
+    updateReservation: update.execute.bind(update),
+    cancelReservation: cancel.execute.bind(cancel),
+    confirmReservation: confirm.execute.bind(confirm),
+    rejectReservation: reject.execute.bind(reject),
+    listReservations: list.execute.bind(list),
+  };
+};
+
+describe('reservation use cases', () => {
+  let svc: ReturnType<typeof useCases>;
   const create = (
     roomId: string,
     day: string,
@@ -40,11 +68,7 @@ describe('ReservationsService', () => {
   ) => svc.createReservation(u, { roomId, ...at(day, a, b) });
 
   beforeEach(() => {
-    svc = new ReservationsService(
-      new InMemoryReservationRepository(),
-      catalog,
-      authorization as never,
-    );
+    svc = useCases();
   });
 
   it('creates PENDING reservation', async () => {

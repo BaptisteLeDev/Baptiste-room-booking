@@ -13,7 +13,13 @@ import {
 } from '@nestjs/common';
 import type { PaginatedReservations, Reservation } from '../../contract.js';
 import { CurrentUserId } from '../auth/current-user.decorator.js';
-import { ReservationsService } from './application/reservations.service.js';
+import { CancelReservationUseCase } from './application/use-cases/cancel-reservation.use-case.js';
+import { ConfirmReservationUseCase } from './application/use-cases/confirm-reservation.use-case.js';
+import { CreateReservationUseCase } from './application/use-cases/create-reservation.use-case.js';
+import { GetReservationUseCase } from './application/use-cases/get-reservation.use-case.js';
+import { ListReservationsUseCase } from './application/use-cases/list-reservations.use-case.js';
+import { RejectReservationUseCase } from './application/use-cases/reject-reservation.use-case.js';
+import { UpdateReservationUseCase } from './application/use-cases/update-reservation.use-case.js';
 import { CreateReservationDto } from './dto/create-reservation.dto.js';
 import { ListReservationsQueryDto } from './dto/list-reservations-query.dto.js';
 import { RejectReservationDto } from './dto/reject-reservation.dto.js';
@@ -21,14 +27,22 @@ import { UpdateReservationDto } from './dto/update-reservation.dto.js';
 
 @Controller('reservations')
 export class ReservationsController {
-  constructor(private readonly reservations: ReservationsService) {}
+  constructor(
+    private readonly listUseCase: ListReservationsUseCase,
+    private readonly createUseCase: CreateReservationUseCase,
+    private readonly getUseCase: GetReservationUseCase,
+    private readonly updateUseCase: UpdateReservationUseCase,
+    private readonly cancelUseCase: CancelReservationUseCase,
+    private readonly confirmUseCase: ConfirmReservationUseCase,
+    private readonly rejectUseCase: RejectReservationUseCase,
+  ) {}
 
   @Get()
   listReservations(
     @Query() query: ListReservationsQueryDto,
     @CurrentUserId() userId: string,
   ): Promise<PaginatedReservations> {
-    return this.reservations.listReservations(userId, query);
+    return this.listUseCase.execute(userId, query);
   }
 
   @Post()
@@ -37,7 +51,7 @@ export class ReservationsController {
     @Body() body: CreateReservationDto,
     @CurrentUserId() userId: string,
   ): Promise<Reservation> {
-    return this.reservations.createReservation(userId, body);
+    return this.createUseCase.execute(userId, body);
   }
 
   @Get(':reservationId')
@@ -45,7 +59,7 @@ export class ReservationsController {
     @Param('reservationId', ParseUUIDPipe) reservationId: string,
     @CurrentUserId() userId: string,
   ): Promise<Reservation> {
-    return this.reservations.getReservation(reservationId, userId);
+    return this.getUseCase.execute(reservationId, userId);
   }
 
   @Patch(':reservationId')
@@ -54,7 +68,7 @@ export class ReservationsController {
     @Body() body: UpdateReservationDto,
     @CurrentUserId() userId: string,
   ): Promise<Reservation> {
-    return this.reservations.updateReservation(reservationId, userId, body);
+    return this.updateUseCase.execute(reservationId, userId, body);
   }
 
   @Delete(':reservationId')
@@ -63,7 +77,7 @@ export class ReservationsController {
     @Param('reservationId', ParseUUIDPipe) reservationId: string,
     @CurrentUserId() userId: string,
   ): Promise<void> {
-    return this.reservations.cancelReservation(reservationId, userId);
+    return this.cancelUseCase.execute(reservationId, userId);
   }
 
   @Post(':reservationId/confirm')
@@ -72,7 +86,7 @@ export class ReservationsController {
     @Param('reservationId', ParseUUIDPipe) reservationId: string,
     @CurrentUserId() userId: string,
   ): Promise<Reservation> {
-    return this.reservations.confirmReservation(reservationId, userId);
+    return this.confirmUseCase.execute(reservationId, userId);
   }
 
   @Post(':reservationId/reject')
@@ -82,6 +96,6 @@ export class ReservationsController {
     @Body() _body: RejectReservationDto,
     @CurrentUserId() userId: string,
   ): Promise<Reservation> {
-    return this.reservations.rejectReservation(reservationId, userId);
+    return this.rejectUseCase.execute(reservationId, userId);
   }
 }

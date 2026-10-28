@@ -3,45 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { hasPgCode, PgCode } from '../../../common/database/pg-error.js';
 import { DomainError } from '../../../common/domain-error.js';
-import {
-  Reservation,
-  type ReservationSnapshot,
-} from '../domain/reservation.js';
+import type { Reservation } from '../domain/reservation.js';
 import type { ReservationRepository } from '../domain/reservation-repository.js';
-import { RoomEntity } from '../../rooms/infra/room.entity.js';
 import { TimeSlot } from '../domain/time-slot.js';
 import { ReservationEntity } from './reservation.entity.js';
-
-export const toSnapshot = (e: ReservationEntity): ReservationSnapshot => ({
-  id: e.id,
-  roomId: e.roomId,
-  userId: e.userId,
-  startAt: e.startTime.toISOString(),
-  endAt: e.endTime.toISOString(),
-  status: e.status as ReservationSnapshot['status'],
-  ...(e.numberOfParticipants !== null && {
-    numberOfParticipants: e.numberOfParticipants,
-  }),
-  ...(e.comment !== null && { comment: e.comment }),
-  totalAmount: e.totalAmount,
-  currency: e.currency,
-  createdAt: e.createdAt.toISOString(),
-});
-
-const fromSnapshot = (s: ReservationSnapshot): ReservationEntity =>
-  Object.assign(new ReservationEntity(), {
-    id: s.id,
-    roomId: s.roomId,
-    userId: s.userId,
-    startTime: new Date(s.startAt),
-    endTime: new Date(s.endAt),
-    status: s.status,
-    numberOfParticipants: s.numberOfParticipants ?? null,
-    comment: s.comment ?? null,
-    totalAmount: s.totalAmount,
-    currency: s.currency,
-    createdAt: new Date(s.createdAt),
-  });
+import { toEntity, toReservation } from './reservation.mapper.js';
+import { RoomRow } from './room-row.entity.js';
 
 @Injectable()
 export class TypeOrmReservationRepository implements ReservationRepository {
@@ -52,12 +19,12 @@ export class TypeOrmReservationRepository implements ReservationRepository {
 
   async get(id: string): Promise<Reservation | undefined> {
     const row = await this.rows.findOneBy({ id });
-    return row ? Reservation.restore(toSnapshot(row)) : undefined;
+    return row ? toReservation(row) : undefined;
   }
 
   async save(r: Reservation): Promise<void> {
     try {
-      await this.rows.save(fromSnapshot(r.toSnapshot()));
+      await this.rows.save(toEntity(r.toSnapshot()));
     } catch (e) {
       if (hasPgCode(e, PgCode.EXCLUSION_VIOLATION)) {
         throw new DomainError(
@@ -73,7 +40,7 @@ export class TypeOrmReservationRepository implements ReservationRepository {
   // ponytail: full scan, push filters into SQL when volume grows
   async list(): Promise<Reservation[]> {
     const rows = await this.rows.find();
-    return rows.map((row) => Reservation.restore(toSnapshot(row)));
+    return rows.map(toReservation);
   }
 
   async findOverlapping(
@@ -93,7 +60,7 @@ export class TypeOrmReservationRepository implements ReservationRepository {
       });
     if (excludeId) q.andWhere('res.id != :excludeId', { excludeId });
     const row = await q.getOne();
-    return row ? Reservation.restore(toSnapshot(row)) : undefined;
+    return row ? toReservation(row) : undefined;
   }
 
   // Locking reservation rows misses phantom inserts, so lock the room row.
@@ -103,7 +70,7 @@ export class TypeOrmReservationRepository implements ReservationRepository {
   ): Promise<T> {
     return this.rows.manager.transaction(async (m) => {
       await m
-        .createQueryBuilder(RoomEntity, 'room')
+        .createQueryBuilder(RoomRow, 'room')
         .setLock('pessimistic_write')
         .where('room.id = :roomId', { roomId })
         .getOne();

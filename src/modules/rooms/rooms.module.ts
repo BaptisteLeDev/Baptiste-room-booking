@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module.js';
-import { ReservationEntity } from '../reservations/infra/reservation.entity.js';
 import { CreateRoomUseCase } from './application/use-cases/create-room.use-case.js';
 import { DeleteRoomUseCase } from './application/use-cases/delete-room.use-case.js';
 import { GetRoomAvailabilityUseCase } from './application/use-cases/get-room-availability.use-case.js';
@@ -17,11 +16,7 @@ import { RoomsController } from './rooms.controller.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      RoomEntity,
-      AvailabilityEntity,
-      ReservationEntity,
-    ]),
+    TypeOrmModule.forFeature([RoomEntity, AvailabilityEntity]),
     AuthModule,
   ],
   controllers: [RoomsController],
