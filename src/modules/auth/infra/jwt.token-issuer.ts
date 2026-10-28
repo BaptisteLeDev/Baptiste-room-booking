@@ -22,10 +22,11 @@ export class JwtTokenIssuer implements TokenIssuer {
   }
 
   async verify(token: string): Promise<VerifiedToken> {
-    const { sub, exp } = await this.jwt.verifyAsync<{
+    const { sub, exp, iat } = await this.jwt.verifyAsync<{
       sub: string;
       exp: number;
+      iat: number;
     }>(token);
-    return { userId: sub, exp };
+    return { userId: sub, exp, issuedAt: iat };
   }
 }

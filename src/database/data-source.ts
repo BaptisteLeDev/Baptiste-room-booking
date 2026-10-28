@@ -12,6 +12,7 @@ import { OwnerRow } from '../modules/rooms/infra/owner-row.entity.js';
 import { InitSchema1793106343582 } from './migrations/1793106343582-InitSchema.js';
 import { AddAvailabilityAvailable1793106500000 } from './migrations/1793106500000-AddAvailabilityAvailable.js';
 import { SeedDemoUser1793106400000 } from './migrations/1793106400000-SeedDemoUser.js';
+import { AddUserPasswordChangedAt1793196619708 } from './migrations/1793196619708-AddUserPasswordChangedAt.js';
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
@@ -36,6 +37,7 @@ export const dataSourceOptions: DataSourceOptions = {
     InitSchema1793106343582,
     SeedDemoUser1793106400000,
     AddAvailabilityAvailable1793106500000,
+    AddUserPasswordChangedAt1793196619708,
   ],
   synchronize: false,
   logging: process.env.DB_LOGGING === 'true',

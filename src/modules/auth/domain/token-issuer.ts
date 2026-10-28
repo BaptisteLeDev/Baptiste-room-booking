@@ -1,5 +1,5 @@
 export type IssuedToken = { token: string; expiresIn: number };
-export type VerifiedToken = { userId: string; exp: number };
+export type VerifiedToken = { userId: string; exp: number; issuedAt: number };
 
 export interface TokenIssuer {
   sign(userId: string): Promise<IssuedToken>;

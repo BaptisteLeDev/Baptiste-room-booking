@@ -16,7 +16,10 @@ export type NewUser = Omit<UserSnapshot, 'role'> & {
   passwordHash: string;
 };
 
-export type UserState = UserSnapshot & { passwordHash: string };
+export type UserState = UserSnapshot & {
+  passwordHash: string;
+  passwordChangedAt?: string;
+};
 
 export type ProfileChanges = Partial<
   Pick<UserSnapshot, 'firstName' | 'lastName' | 'email'>
@@ -74,12 +77,27 @@ export class User {
     return this.state.passwordHash;
   }
 
-  changePasswordHash(passwordHash: string): void {
-    this.state = { ...this.state, passwordHash };
+  get passwordChangedAt(): Date | undefined {
+    return this.state.passwordChangedAt
+      ? new Date(this.state.passwordChangedAt)
+      : undefined;
+  }
+
+  changePasswordHash(passwordHash: string, at: Date): void {
+    const truncated = new Date(Math.floor(at.getTime() / 1000) * 1000);
+    this.state = {
+      ...this.state,
+      passwordHash,
+      passwordChangedAt: truncated.toISOString(),
+    };
   }
 
   toSnapshot(): UserSnapshot {
-    const { passwordHash: _hash, ...snapshot } = this.state;
+    const {
+      passwordHash: _hash,
+      passwordChangedAt: _at,
+      ...snapshot
+    } = this.state;
     return snapshot;
   }
 

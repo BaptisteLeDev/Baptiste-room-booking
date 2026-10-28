@@ -29,4 +29,7 @@ export class UserEntity {
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt!: Date;
+
+  @Column({ type: 'timestamptz', name: 'password_changed_at', nullable: true })
+  passwordChangedAt!: Date | null;
 }

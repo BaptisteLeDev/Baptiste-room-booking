@@ -38,10 +38,15 @@ describe('User', () => {
     expect(user.toSnapshot().role).toBe('ADMINISTRATEUR');
   });
 
-  it('changePasswordHash replaces the hash', () => {
+  it('changePasswordHash replaces the hash and stamps passwordChangedAt truncated to seconds', () => {
     const user = User.restore(base);
-    user.changePasswordHash('new');
+    user.changePasswordHash('new', new Date('2026-10-28T10:00:00.789Z'));
     expect(user.passwordHash).toBe('new');
+    expect(user.passwordChangedAt).toEqual(
+      new Date('2026-10-28T10:00:00.000Z'),
+    );
+    expect(user.toState().passwordChangedAt).toBe('2026-10-28T10:00:00.000Z');
+    expect(user.toSnapshot()).not.toHaveProperty('passwordChangedAt');
   });
 
   it('toSnapshot returns a copy', () => {

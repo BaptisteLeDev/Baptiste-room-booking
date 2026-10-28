@@ -14,6 +14,7 @@ export function toDomain(e: UserEntity): User {
     passwordHash: e.passwordHash,
     role: e.role as Role,
     createdAt: e.createdAt.toISOString(),
+    passwordChangedAt: e.passwordChangedAt?.toISOString(),
   });
 }
 
@@ -26,5 +27,8 @@ export function toEntity(s: UserState): UserEntity {
     passwordHash: s.passwordHash,
     role: s.role,
     createdAt: new Date(s.createdAt),
+    passwordChangedAt: s.passwordChangedAt
+      ? new Date(s.passwordChangedAt)
+      : null,
   });
 }

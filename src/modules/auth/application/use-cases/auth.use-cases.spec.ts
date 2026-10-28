@@ -49,7 +49,7 @@ const hasher: PasswordHasher = {
 
 const tokens: TokenIssuer = {
   sign: async (id) => ({ token: `t:${id}`, expiresIn: 3600 }),
-  verify: async (t) => ({ userId: t.slice(2), exp: 99 }),
+  verify: async (t) => ({ userId: t.slice(2), exp: 99, issuedAt: 0 }),
 };
 
 describe('auth use cases', () => {

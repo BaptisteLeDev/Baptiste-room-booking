@@ -25,7 +25,10 @@ export class ChangePasswordUseCase {
     ) {
       throw invalidCredentials();
     }
-    user.changePasswordHash(await this.hasher.hash(body.newPassword));
+    user.changePasswordHash(
+      await this.hasher.hash(body.newPassword),
+      new Date(),
+    );
     await this.users.save(user);
   }
 }

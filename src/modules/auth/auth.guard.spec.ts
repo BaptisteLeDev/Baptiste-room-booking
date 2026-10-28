@@ -5,16 +5,35 @@ import { AuthGuard, AuthenticatedRequest } from './auth.guard.js';
 import { Public } from './public.decorator.js';
 import { JwtTokenIssuer } from './infra/jwt.token-issuer.js';
 import { InMemoryRevokedTokenStore } from './infra/in-memory-revoked-tokens.store.js';
+import { User } from '../users/domain/entities/user.entity.js';
+import type { IUserRepository } from '../users/domain/repositories/user.repository.interface.js';
 
 const SECRET = 'test-secret';
+const NOW = Math.floor(Date.now() / 1000);
+const CHANGED_AT_SECONDS = NOW - 60;
+const CHANGED_AT = new Date(CHANGED_AT_SECONDS * 1000).toISOString();
 
-function setup() {
+const baseUser = {
+  id: 'user-1',
+  firstName: 'Ada',
+  lastName: 'Lovelace',
+  email: 'ada@example.com',
+  role: 'CLIENT' as const,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  passwordHash: 'hash',
+};
+
+function setup(user: User | null = User.restore(baseUser)) {
   const jwt = new JwtService({ secret: SECRET });
   const revoked = new InMemoryRevokedTokenStore();
+  const users = {
+    findById: async () => user,
+  } as unknown as IUserRepository;
   const guard = new AuthGuard(
     new JwtTokenIssuer(jwt),
     new Reflector(),
     revoked,
+    users,
   );
   return { jwt, revoked, guard };
 }
@@ -78,5 +97,59 @@ describe('AuthGuard', () => {
     await expect(guard.canActivate(contextFor(request))).resolves.toBe(true);
     expect(request.userId).toBe('user-1');
     expect(request.token).toBe(token);
+  });
+
+  it('rejects a token issued before the last password change', async () => {
+    const { guard, jwt } = setup(
+      User.restore({ ...baseUser, passwordChangedAt: CHANGED_AT }),
+    );
+    const token = await jwt.signAsync(
+      { sub: 'user-1', iat: CHANGED_AT_SECONDS - 1 },
+      { expiresIn: 3600 },
+    );
+    const request = { headers: { authorization: `Bearer ${token}` } };
+
+    await expect(guard.canActivate(contextFor(request))).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+  });
+
+  it('accepts a token issued in the same second as the password change', async () => {
+    const { guard, jwt } = setup(
+      User.restore({ ...baseUser, passwordChangedAt: CHANGED_AT }),
+    );
+    const token = await jwt.signAsync(
+      { sub: 'user-1', iat: CHANGED_AT_SECONDS },
+      { expiresIn: 3600 },
+    );
+    const request = { headers: { authorization: `Bearer ${token}` } };
+
+    await expect(guard.canActivate(contextFor(request))).resolves.toBe(true);
+  });
+
+  it('accepts a token issued after the last password change', async () => {
+    const { guard, jwt } = setup(
+      User.restore({ ...baseUser, passwordChangedAt: CHANGED_AT }),
+    );
+    const token = await jwt.signAsync(
+      { sub: 'user-1', iat: CHANGED_AT_SECONDS + 1 },
+      { expiresIn: 3600 },
+    );
+    const request = { headers: { authorization: `Bearer ${token}` } };
+
+    await expect(guard.canActivate(contextFor(request))).resolves.toBe(true);
+  });
+
+  it('rejects a valid token whose user no longer exists', async () => {
+    const { guard, jwt } = setup(null);
+    const token = await jwt.signAsync(
+      { sub: 'ghost', iat: NOW },
+      { expiresIn: 3600 },
+    );
+    const request = { headers: { authorization: `Bearer ${token}` } };
+
+    await expect(guard.canActivate(contextFor(request))).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 });

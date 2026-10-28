@@ -180,6 +180,34 @@ describe('Auth routes (e2e)', () => {
       .expect(200);
   });
 
+  it('PATCH /api/auth/password -> old token 401 on /me, new login 200', async () => {
+    const oldToken = await loginAs(app);
+    // JWT iat has 1s granularity: wait so the old token is strictly older than the change
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    await http()
+      .patch('/api/auth/password')
+      .set('Authorization', `Bearer ${oldToken}`)
+      .send({
+        currentPassword: TEST_PASSWORD,
+        newPassword: 'newsecret',
+      } satisfies ChangePasswordRequest)
+      .expect(204);
+    await http()
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${oldToken}`)
+      .expect(401);
+
+    const res = await http()
+      .post('/api/auth/login')
+      .send({ email: userFixture.email, password: 'newsecret' })
+      .expect(200);
+    const newToken = json<AuthResponse>(res).accessToken;
+    await http()
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${newToken}`)
+      .expect(200);
+  });
+
   it('GET /api/rooms -> 200 without token (public)', () => {
     return http().get('/api/rooms').expect(200);
   });
