@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toDomain, toEntity, toUser } from './user.mapper.js';
+import { toDomain, toEntity } from './user.mapper.js';
 import { UserEntity } from './user.entity.js';
 
 const row = Object.assign(new UserEntity(), {
@@ -15,9 +15,5 @@ const row = Object.assign(new UserEntity(), {
 describe('user.mapper', () => {
   it('toDomain then toEntity preserves passwordHash', () => {
     expect(toEntity(toDomain(row).toState()).passwordHash).toBe('secret-hash');
-  });
-
-  it('toUser never exposes passwordHash', () => {
-    expect(toUser(row)).not.toHaveProperty('passwordHash');
   });
 });

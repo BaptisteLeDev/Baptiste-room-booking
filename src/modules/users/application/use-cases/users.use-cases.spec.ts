@@ -4,7 +4,6 @@ import { DomainError } from '../../../../common/domain-error.js';
 import { User } from '../../domain/entities/user.entity.js';
 import type { IUserRepository } from '../../domain/repositories/user.repository.interface.js';
 import { DeleteUserUseCase } from './delete-user.use-case.js';
-import { GetUserRoleUseCase } from './get-user-role.use-case.js';
 import { GetUserUseCase } from './get-user.use-case.js';
 import { ListUsersUseCase } from './list-users.use-case.js';
 import { UpdateUserUseCase } from './update-user.use-case.js';
@@ -126,13 +125,5 @@ describe('users use cases', () => {
       new DeleteUserUseCase(repo([]), authz(true)).execute('admin', 'x'),
     );
     expect(missing).toMatchObject({ code: 'NOT_FOUND' });
-  });
-
-  it('get-user-role returns role or forbids unknown user', async () => {
-    const useCase = new GetUserRoleUseCase(repo([ada()]));
-    await expect(useCase.execute('u1')).resolves.toBe('CLIENT');
-    expect(await rejection(useCase.execute('x'))).toBeInstanceOf(
-      ForbiddenException,
-    );
   });
 });

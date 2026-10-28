@@ -112,6 +112,17 @@ describe('auth use cases', () => {
     expect(store.isRevoked('t:u1')).toBe(true);
   });
 
+  it('logout maps an expired token to 401', async () => {
+    const expired: TokenIssuer = {
+      ...tokens,
+      verify: () => Promise.reject(new Error('jwt expired')),
+    };
+    const logout = new LogoutUseCase(expired, new InMemoryRevokedTokenStore());
+    expect(await rejection(logout.execute('t:u1'))).toBeInstanceOf(
+      UnauthorizedException,
+    );
+  });
+
   it('change-password checks the current one then stores the new hash', async () => {
     const users = repo([ada()]);
     const useCase = new ChangePasswordUseCase(users, hasher);

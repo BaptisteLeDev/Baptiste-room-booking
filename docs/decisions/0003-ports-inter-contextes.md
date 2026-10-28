@@ -20,8 +20,10 @@ Le contexte consommateur définit son propre port, en lecture seule, dans son
   sert de cible de clé étrangère pour `users`.
 - Paiements : `ReservationCatalog` (`RESERVATION_CATALOG`), adaptateur
   `TypeOrmReservationCatalog` (SQL en lecture sur `reservations`).
-- Auth : lit les comptes par `USER_REPOSITORY`, exporté par
-  `UsersPersistenceModule` (port d'Utilisateurs, pas son `infra/`).
+  `ReservationRow` sert de cible de clé étrangère pour `reservations`.
+- Auth, exception : lit et écrit les comptes via le port d'Utilisateurs
+  `USER_REPOSITORY`, exporté par `UsersPersistenceModule` (pas son `infra/`),
+  et crée les comptes par `User.create` du domaine Utilisateurs.
 
 Aucun contexte n'importe `*/infra` d'un autre.
 

@@ -3,15 +3,24 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  OneToOne,
   PrimaryGeneratedColumn,
+  type Relation,
 } from 'typeorm';
 import { decimal } from '../../../database/decimal.transformer.js';
+import { ReservationRow } from './reservation-row.entity.js';
 
 @Entity('payments')
 @Check(`"status" IN ('PENDING','PAID','FAILED','REFUNDED')`)
 export class PaymentEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  // OneToOne -> UNIQUE REL_ + FK as in InitSchema; guards PAYMENT_ALREADY_EXISTS.
+  @OneToOne(() => ReservationRow)
+  @JoinColumn({ name: 'reservation_id' })
+  reservation!: Relation<ReservationRow>;
 
   @Column({ type: 'uuid', name: 'reservation_id' })
   reservationId!: string;

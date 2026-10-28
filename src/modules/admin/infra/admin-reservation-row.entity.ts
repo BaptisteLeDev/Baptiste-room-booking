@@ -2,7 +2,7 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 import { decimal } from '../../../database/decimal.transformer.js';
 
 // Read-only view of `reservations`; schema owned by reservations/infra.
-@Entity('reservations')
+@Entity('reservations', { synchronize: false })
 export class AdminReservationRow {
   @PrimaryColumn({ type: 'uuid' })
   id!: string;

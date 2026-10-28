@@ -1,4 +1,3 @@
-import type { User as UserDto } from '../../../contract.js';
 import {
   type Role,
   User,
@@ -17,8 +16,6 @@ export function toDomain(e: UserEntity): User {
     createdAt: e.createdAt.toISOString(),
   });
 }
-
-export const toUser = (e: UserEntity): UserDto => toDomain(e).toSnapshot();
 
 export function toEntity(s: UserState): UserEntity {
   return Object.assign(new UserEntity(), {

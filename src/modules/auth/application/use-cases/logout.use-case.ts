@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import {
   REVOKED_TOKEN_STORE,
   type RevokedTokenStore,
@@ -13,7 +13,10 @@ export class LogoutUseCase {
   ) {}
 
   async execute(token: string): Promise<void> {
-    const { exp } = await this.tokens.verify(token);
+    // Token may expire between AuthGuard and here: same 401 as the guard.
+    const { exp } = await this.tokens.verify(token).catch(() => {
+      throw new UnauthorizedException();
+    });
     this.revoked.revoke(token, exp);
   }
 }

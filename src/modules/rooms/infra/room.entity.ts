@@ -9,9 +9,9 @@ import {
   PrimaryGeneratedColumn,
   type Relation,
 } from 'typeorm';
-import { UserEntity } from '../../users/infra/user.entity.js';
 import { decimal } from '../../../database/decimal.transformer.js';
 import { AvailabilityEntity } from './availability.entity.js';
+import { OwnerRow } from './owner-row.entity.js';
 
 @Entity('rooms')
 @Check('"capacity" >= 1')
@@ -21,9 +21,9 @@ export class RoomEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @ManyToOne(() => OwnerRow, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'owner_id' })
-  owner!: Relation<UserEntity>;
+  owner!: Relation<OwnerRow>;
 
   @Column({ type: 'uuid', name: 'owner_id' })
   ownerId!: string;

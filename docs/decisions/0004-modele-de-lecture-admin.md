@@ -25,5 +25,5 @@ l'adaptateur `TypeOrmAdminQuery`. Il lit `reservations` par sa propre vue
   `reservations/infra` et son filet SQL). Un changement de colonne doit être
   répercuté dans `AdminReservationRow`.
 - Admin dépend du domaine Réservations (type `Reservation`), pas de son `infra/`.
-- `AdminReservationRow` ne pose pas `synchronize: false`, contrairement à
-  `RoomRow` : à confirmer que le schéma reste géré par migrations.
+- `AdminReservationRow` pose `synchronize: false`, comme `RoomRow` : le schéma
+  de `reservations` reste géré par les migrations.
