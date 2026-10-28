@@ -1,3 +1,5 @@
+import { Injectable } from '@nestjs/common';
+import type { PasswordHasher } from '../domain/password-hasher.js';
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
@@ -30,4 +32,10 @@ export async function verifyPassword(
     KEYLEN,
   );
   return timingSafeEqual(expected, actual);
+}
+
+@Injectable()
+export class ScryptPasswordHasher implements PasswordHasher {
+  hash = hashPassword;
+  verify = verifyPassword;
 }

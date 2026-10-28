@@ -4,7 +4,7 @@ import type { Payment, PaymentCreateRequest } from '../../contract.js';
 import { DomainError } from '../../common/domain-error.js';
 import { notFound } from '../../common/not-found.js';
 import { hasPgCode, PgCode } from '../../common/database/pg-error.js';
-import { AuthorizationService } from '../auth/authorization.service.js';
+import { AuthorizationService } from '../auth/application/authorization.service.js';
 import { Repository } from 'typeorm';
 import { ReservationEntity } from '../reservations/infra/reservation.entity.js';
 import { PaymentEntity } from './infra/payment.entity.js';

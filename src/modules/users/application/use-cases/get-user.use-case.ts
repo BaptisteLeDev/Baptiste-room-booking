@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { User as UserDto } from '../../../../contract.js';
-import { AuthorizationService } from '../../../auth/authorization.service.js';
+import { AuthorizationService } from '../../../auth/application/authorization.service.js';
 import {
   type IUserRepository,
   USER_REPOSITORY,

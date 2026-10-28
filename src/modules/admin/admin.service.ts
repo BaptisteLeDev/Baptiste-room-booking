@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { PaginatedReservations, Statistics } from '../../contract.js';
-import { AuthorizationService } from '../auth/authorization.service.js';
+import { AuthorizationService } from '../auth/application/authorization.service.js';
 import { paginate } from '../../common/database/paginate.js';
 import { DomainError } from '../../common/domain-error.js';
 import { ReservationEntity } from '../reservations/infra/reservation.entity.js';

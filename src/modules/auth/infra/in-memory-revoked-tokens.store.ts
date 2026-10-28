@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import type { RevokedTokenStore } from '../domain/revoked-token-store.js';
 
 @Injectable()
-export class RevokedTokens {
+export class InMemoryRevokedTokenStore implements RevokedTokenStore {
   // ponytail: in-memory, lost on restart, single instance only.
   // Upgrade to a DB/redis table when scaling out.
   private readonly expiries = new Map<string, number>();
@@ -14,7 +15,7 @@ export class RevokedTokens {
     this.expiries.set(token, expSeconds);
   }
 
-  has(token: string): boolean {
+  isRevoked(token: string): boolean {
     return this.expiries.has(token);
   }
 }

@@ -1,4 +1,4 @@
-import { hashPassword, verifyPassword } from './password.js';
+import { hashPassword, verifyPassword } from './scrypt-password-hasher.js';
 
 describe('password', () => {
   it('hashes without storing the plain password', async () => {

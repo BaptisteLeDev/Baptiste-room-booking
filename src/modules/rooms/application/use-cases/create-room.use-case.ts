@@ -4,7 +4,7 @@ import type {
   RoomCreateRequest,
   Room as RoomDto,
 } from '../../../../contract.js';
-import { AuthorizationService } from '../../../auth/authorization.service.js';
+import { AuthorizationService } from '../../../auth/application/authorization.service.js';
 import { Room } from '../../domain/entities/room.entity.js';
 import {
   type IRoomRepository,

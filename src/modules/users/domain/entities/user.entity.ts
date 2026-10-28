@@ -78,6 +78,10 @@ export class User {
     return this.state.passwordHash;
   }
 
+  changePasswordHash(passwordHash: string): void {
+    this.state = { ...this.state, passwordHash };
+  }
+
   toSnapshot(): UserSnapshot {
     const { passwordHash: _hash, ...snapshot } = this.state;
     return snapshot;

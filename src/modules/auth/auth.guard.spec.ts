@@ -3,14 +3,19 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard.js';
 import { Public } from './public.decorator.js';
-import { RevokedTokens } from './revoked-tokens.js';
+import { JwtTokenIssuer } from './infra/jwt.token-issuer.js';
+import { InMemoryRevokedTokenStore } from './infra/in-memory-revoked-tokens.store.js';
 
 const SECRET = 'test-secret';
 
 function setup() {
   const jwt = new JwtService({ secret: SECRET });
-  const revoked = new RevokedTokens();
-  const guard = new AuthGuard(jwt, new Reflector(), revoked);
+  const revoked = new InMemoryRevokedTokenStore();
+  const guard = new AuthGuard(
+    new JwtTokenIssuer(jwt),
+    new Reflector(),
+    revoked,
+  );
   return { jwt, revoked, guard };
 }
 

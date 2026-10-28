@@ -6,7 +6,7 @@ import { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
 import { setupApp } from '../src/setup-app.js';
 import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
-import { hashPassword } from '../src/modules/auth/password.js';
+import { hashPassword } from '../src/modules/auth/infra/scrypt-password-hasher.js';
 
 export async function createTestApp(): Promise<INestApplication<App>> {
   const moduleFixture = await Test.createTestingModule({

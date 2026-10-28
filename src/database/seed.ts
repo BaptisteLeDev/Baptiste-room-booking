@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { In } from 'typeorm';
 import dataSource from './data-source.js';
-import { hashPassword } from '../modules/auth/password.js';
+import { hashPassword } from '../modules/auth/infra/scrypt-password-hasher.js';
 import { UserEntity } from '../modules/users/infra/user.entity.js';
 import { RoomEntity } from '../modules/rooms/infra/room.entity.js';
 import { AvailabilityEntity } from '../modules/rooms/infra/availability.entity.js';

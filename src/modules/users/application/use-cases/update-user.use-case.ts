@@ -3,7 +3,7 @@ import type {
   User as UserDto,
   UserUpdateRequest,
 } from '../../../../contract.js';
-import { AuthorizationService } from '../../../auth/authorization.service.js';
+import { AuthorizationService } from '../../../auth/application/authorization.service.js';
 import {
   emailUsed,
   normalizeEmail,

@@ -18,7 +18,7 @@ import {
 } from '../domain/reservation-repository.js';
 import { ROOM_CATALOG, type RoomCatalog } from '../domain/room-catalog.js';
 import { TimeSlot } from '../domain/time-slot.js';
-import { AuthorizationService } from '../../auth/authorization.service.js';
+import { AuthorizationService } from '../../auth/application/authorization.service.js';
 
 const CURRENCY = 'EUR';
 

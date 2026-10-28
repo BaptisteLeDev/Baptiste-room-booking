@@ -39,6 +39,12 @@ describe('User', () => {
     expect(user.isAdmin()).toBe(true);
   });
 
+  it('changePasswordHash replaces the hash', () => {
+    const user = User.restore(base);
+    user.changePasswordHash('new');
+    expect(user.passwordHash).toBe('new');
+  });
+
   it('toSnapshot returns a copy', () => {
     const user = User.restore(base);
     user.toSnapshot().firstName = 'X';

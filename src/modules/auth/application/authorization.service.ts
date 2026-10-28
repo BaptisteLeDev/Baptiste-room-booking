@@ -1,19 +1,20 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserEntity } from '../users/infra/user.entity.js';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import type { Role } from '../../users/domain/entities/user.entity.js';
+import {
+  type IUserRepository,
+  USER_REPOSITORY,
+} from '../../users/domain/repositories/user.repository.interface.js';
 
 @Injectable()
 export class AuthorizationService {
   constructor(
-    @InjectRepository(UserEntity)
-    private readonly users: Repository<UserEntity>,
+    @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
   ) {}
 
-  async role(userId: string): Promise<UserEntity['role']> {
-    const user = await this.users.findOneBy({ id: userId });
+  async role(userId: string): Promise<Role> {
+    const user = await this.users.findById(userId);
     if (!user) throw new ForbiddenException();
-    return user.role;
+    return user.toSnapshot().role;
   }
 
   async isAdmin(userId: string): Promise<boolean> {

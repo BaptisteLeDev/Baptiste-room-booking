@@ -3,7 +3,7 @@ import type {
   Room as RoomDto,
   RoomUpdateRequest,
 } from '../../../../contract.js';
-import { AuthorizationService } from '../../../auth/authorization.service.js';
+import { AuthorizationService } from '../../../auth/application/authorization.service.js';
 import {
   type IRoomRepository,
   ROOM_REPOSITORY,

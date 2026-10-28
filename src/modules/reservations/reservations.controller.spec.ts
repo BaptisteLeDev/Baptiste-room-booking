@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthorizationService } from '../auth/authorization.service.js';
+import { AuthorizationService } from '../auth/application/authorization.service.js';
 import { ReservationsService } from './application/reservations.service.js';
 import { RESERVATION_REPOSITORY } from './domain/reservation-repository.js';
 import { ROOM_CATALOG } from './domain/room-catalog.js';
