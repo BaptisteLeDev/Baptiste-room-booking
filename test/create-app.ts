@@ -38,11 +38,14 @@ export const TEST_PASSWORD = 'password123';
 export async function loginAs(
   app: INestApplication<App>,
   email = userFixture.email,
+  role = 'CLIENT',
 ): Promise<string> {
+  // role always reset: fixture user is shared across spec files
   await app
     .get(DataSource)
-    .query('UPDATE users SET password_hash = $1 WHERE email = $2', [
+    .query('UPDATE users SET password_hash = $1, role = $2 WHERE email = $3', [
       await hashPassword(TEST_PASSWORD),
+      role,
       email,
     ]);
   const res = await request(app.getHttpServer())

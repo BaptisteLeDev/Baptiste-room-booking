@@ -67,7 +67,7 @@ describe('Reservations routes (e2e)', () => {
 
   beforeEach(async () => {
     await resetDatabase(app);
-    token = await loginAs(app);
+    token = await loginAs(app, undefined, 'GESTIONNAIRE');
     roomId = await createRoom();
   });
 
