@@ -9,7 +9,7 @@ Gère le cycle de vie des réservations de salles. Contrat : `core/openapi.yml` 
 | Réservation            | `Reservation`                                                | Demande d'occupation d'une Salle par un Utilisateur sur un Créneau.                       |
 | Demande de réservation | `Reservation.request`                                        | Création ; statut initial `PENDING`.                                                      |
 | Créneau                | `TimeSlot` (`startAt`/`endAt`)                               | Intervalle [début, fin[ ; fin exclue, donc deux créneaux adjacents ne se chevauchent pas. |
-| Plage de disponibilité | `AvailabilitySlot` (contexte Rooms)                          | Horaire d'ouverture hebdomadaire d'une salle. À ne pas confondre avec Créneau.            |
+| Plage de disponibilité | `AvailabilitySlot` (contexte Rooms)                          | Horaire d'ouverture d'une salle sur une journée. À ne pas confondre avec Créneau.         |
 | Statuts                | `PENDING`, `CONFIRMED`, `REJECTED`, `CANCELLED`, `COMPLETED` | En attente, Confirmée, Refusée, Annulée, Terminée.                                        |
 | Réservation active     | `isActive` (`PENDING`, `CONFIRMED`)                          | Seules les actives bloquent un créneau.                                                   |
 | Modification           | `amend` (domaine) / `updateReservation` (PATCH)              | Changer créneau, participants, commentaire.                                               |

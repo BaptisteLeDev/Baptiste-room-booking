@@ -8,7 +8,7 @@ Gère le catalogue des salles et leurs plages de disponibilité. Contrat : `core
 | ---------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Salle                  | `Room` / `RoomEntity`                 | Espace réservable, avec capacité, lieu, équipements et prix horaire.                                 |
 | Plage de disponibilité | `AvailabilitySlot` / `availabilities` | Horaire d'ouverture d'une salle sur une journée. À ne pas confondre avec le Créneau de Réservations. |
-| Statut de salle        | `status` (`ACTIVE`, `INACTIVE`)       | Une salle `INACTIVE` reste en base, mais n'est plus proposée.                                        |
+| Statut de salle        | `status` (`ACTIVE`, `INACTIVE`)       | Une salle `INACTIVE` reste en base et listée, mais n'est plus réservable.                            |
 
 ## Frontières
 
@@ -26,11 +26,11 @@ Couches : `domain/` (entité `Room` avec invariants, port `IRoomRepository`, tok
 - Capacité >= 1, prix horaire >= 0 (contraintes SQL et DTO).
 - Plage : fin strictement après début (contrainte SQL).
 - Heures saisies et affichées en `Europe/Paris`. Stockage en `timestamptz`.
-- `available` n'est jamais stocké : calculé à la lecture, faux si une réservation `PENDING` ou `CONFIRMED` chevauche la plage.
-- `setAvailability` remplace les plages du jour donné. Les créneaux `available: false` ne sont pas stockés.
+- `available` renvoyé à la lecture n'est jamais stocké : calculé, faux si la plage est fermée (`available: false`) ou si une réservation `PENDING` ou `CONFIRMED` chevauche la plage.
+- `replaceAvailability` (`PUT /rooms/:roomId/availability`) remplace les plages du jour donné. Les créneaux `available: false` sont stockés.
 - Supprimer une salle supprime ses plages (cascade). Une salle ayant des réservations ne peut pas être supprimée (409 `ROOM_HAS_RESERVATIONS`).
 - Salle inconnue : 404 `NOT_FOUND`.
-- Filtres de disponibilité sur `GET /rooms` (`date`, `startTime`, `endTime`, `available`) acceptés mais ignorés pour l'instant.
+- Filtres de disponibilité sur `GET /rooms` (`date`, `startTime`, `endTime`, `available`) appliqués seulement si `date` est fourni ; sans `date`, ils sont ignorés.
 
 ## ADR
 
