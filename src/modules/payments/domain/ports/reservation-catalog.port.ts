@@ -6,7 +6,7 @@ export type PayableReservation = {
 };
 
 export interface ReservationCatalog {
-  findPayableReservation(id: string): Promise<PayableReservation | null>;
+  findReservation(id: string): Promise<PayableReservation | null>;
 }
 
 export const RESERVATION_CATALOG = Symbol('ReservationCatalog');

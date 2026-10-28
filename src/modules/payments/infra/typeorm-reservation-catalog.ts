@@ -9,7 +9,7 @@ import type {
 export class TypeOrmReservationCatalog implements ReservationCatalog {
   constructor(private readonly dataSource: DataSource) {}
 
-  async findPayableReservation(id: string): Promise<PayableReservation | null> {
+  async findReservation(id: string): Promise<PayableReservation | null> {
     const [row] = await this.dataSource.query<
       { id: string; userId: string; amount: string; currency: string }[]
     >(

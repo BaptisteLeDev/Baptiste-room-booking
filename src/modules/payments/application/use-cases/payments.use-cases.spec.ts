@@ -18,7 +18,7 @@ const reservation = {
 };
 
 const catalog: ReservationCatalog = {
-  findPayableReservation: async (id) => (id === 'res1' ? reservation : null),
+  findReservation: async (id) => (id === 'res1' ? reservation : null),
 };
 
 const provider: PaymentProvider = {

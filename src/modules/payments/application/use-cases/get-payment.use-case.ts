@@ -23,7 +23,7 @@ export class GetPaymentUseCase {
   async execute(requesterId: string, id: string): Promise<PaymentDto> {
     const payment = await this.payments.findById(id);
     if (!payment) throw notFound();
-    const reservation = await this.catalog.findPayableReservation(
+    const reservation = await this.catalog.findReservation(
       payment.reservationId,
     );
     if (!reservation) throw notFound();

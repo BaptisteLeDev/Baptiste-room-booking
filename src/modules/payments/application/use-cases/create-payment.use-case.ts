@@ -33,7 +33,7 @@ export class CreatePaymentUseCase {
     requesterId: string,
     request: PaymentCreateRequest,
   ): Promise<PaymentDto> {
-    const reservation = await this.catalog.findPayableReservation(
+    const reservation = await this.catalog.findReservation(
       request.reservationId,
     );
     if (!reservation) throw notFound();
