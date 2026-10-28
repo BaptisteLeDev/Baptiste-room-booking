@@ -8,7 +8,7 @@ import {
   type IRoomRepository,
   ROOM_REPOSITORY,
 } from '../../domain/repositories/room.repository.interface.js';
-import { loadRoom } from '../load-room.js';
+import { orNotFound } from '../../../../common/not-found.js';
 
 @Injectable()
 export class UpdateRoomUseCase {
@@ -22,7 +22,7 @@ export class UpdateRoomUseCase {
     userId: string,
     body: RoomUpdateRequest,
   ): Promise<RoomDto> {
-    const room = await loadRoom(this.rooms, id);
+    const room = orNotFound(await this.rooms.findById(id));
     await this.authorization.assertOwnerOrAdmin(userId, room.ownerId);
     room.update(body);
     return (await this.rooms.save(room)).toSnapshot();

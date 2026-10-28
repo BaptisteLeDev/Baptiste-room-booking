@@ -12,7 +12,7 @@ import {
   type IUserRepository,
   USER_REPOSITORY,
 } from '../../domain/repositories/user.repository.interface.js';
-import { loadUser } from '../load-user.js';
+import { orNotFound } from '../../../../common/not-found.js';
 
 @Injectable()
 export class UpdateUserUseCase {
@@ -31,7 +31,7 @@ export class UpdateUserUseCase {
       id,
     );
     if (changes.role !== undefined && !isAdmin) throw new ForbiddenException();
-    const user = await loadUser(this.users, id);
+    const user = orNotFound(await this.users.findById(id));
     if (
       changes.email !== undefined &&
       normalizeEmail(changes.email) !== user.email &&

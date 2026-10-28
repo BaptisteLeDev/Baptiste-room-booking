@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { notFound } from '../../../../common/not-found.js';
+import { orNotFound } from '../../../../common/not-found.js';
 import type { ReservationCreateRequest } from '../../../../contract.js';
 import {
   Reservation,
@@ -28,8 +28,7 @@ export class CreateReservationUseCase {
     userId: string,
     req: ReservationCreateRequest,
   ): Promise<ReservationSnapshot> {
-    const room = await this.catalog.find(req.roomId);
-    if (!room) throw notFound();
+    const room = orNotFound(await this.catalog.find(req.roomId));
     const slot = TimeSlot.of(req.startAt, req.endAt);
     return this.repo.exclusive(req.roomId, async (tx) => {
       await assertFree(tx, req.roomId, slot);

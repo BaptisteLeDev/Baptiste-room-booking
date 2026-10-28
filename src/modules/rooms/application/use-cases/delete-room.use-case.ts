@@ -4,7 +4,7 @@ import {
   type IRoomRepository,
   ROOM_REPOSITORY,
 } from '../../domain/repositories/room.repository.interface.js';
-import { loadRoom } from '../load-room.js';
+import { orNotFound } from '../../../../common/not-found.js';
 
 @Injectable()
 export class DeleteRoomUseCase {
@@ -14,7 +14,7 @@ export class DeleteRoomUseCase {
   ) {}
 
   async execute(id: string, userId: string): Promise<void> {
-    const room = await loadRoom(this.rooms, id);
+    const room = orNotFound(await this.rooms.findById(id));
     await this.authorization.assertOwnerOrAdmin(userId, room.ownerId);
     await this.rooms.delete(id);
   }

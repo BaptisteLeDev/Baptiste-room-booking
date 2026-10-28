@@ -1,6 +1,6 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import type { Payment as PaymentDto } from '../../../../contract.js';
-import { notFound } from '../../../../common/not-found.js';
+import { orNotFound } from '../../../../common/not-found.js';
 import { AuthorizationService } from '../../../auth/application/authorization.service.js';
 import {
   RESERVATION_CATALOG,
@@ -21,12 +21,10 @@ export class GetPaymentUseCase {
   ) {}
 
   async execute(requesterId: string, id: string): Promise<PaymentDto> {
-    const payment = await this.payments.findById(id);
-    if (!payment) throw notFound();
-    const reservation = await this.catalog.findReservation(
-      payment.reservationId,
+    const payment = orNotFound(await this.payments.findById(id));
+    const reservation = orNotFound(
+      await this.catalog.findReservation(payment.reservationId),
     );
-    if (!reservation) throw notFound();
     if (
       reservation.userId !== requesterId &&
       !(await this.authorization.isAdmin(requesterId))

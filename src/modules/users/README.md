@@ -17,7 +17,7 @@ Gère les comptes et leurs rôles. Contrat : `core/openapi.yml` (`/users*`, `Use
 
 ## Provenance des données
 
-PostgreSQL, table `users`, via `TypeOrmUserRepository` (`UserEntity`, mapper `user.mapper.ts`). Couches : `domain/entities/user.entity.ts`, `domain/repositories/`, `application/use-cases/` (un par action, `load-user.ts` pour le 404), `infra/` (adaptateur, mapper, entité TypeORM, DTO dans `dto/`), câblage dans `users.module.ts` et `users-persistence.module.ts`.
+PostgreSQL, table `users`, via `TypeOrmUserRepository` (`UserEntity`, mapper `user.mapper.ts`). Couches : `domain/entities/user.entity.ts`, `domain/repositories/`, `application/use-cases/` (un par action, 404 via `orNotFound` de `common/not-found.ts`), `infra/` (adaptateur, mapper, entité TypeORM, DTO dans `dto/`), câblage dans `users.module.ts` et `users-persistence.module.ts`.
 
 ## Invariants
 

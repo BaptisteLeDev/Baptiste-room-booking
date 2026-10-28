@@ -4,7 +4,7 @@ import type {
   Payment as PaymentDto,
   PaymentCreateRequest,
 } from '../../../../contract.js';
-import { notFound } from '../../../../common/not-found.js';
+import { orNotFound } from '../../../../common/not-found.js';
 import { Payment } from '../../domain/entities/payment.entity.js';
 import { paymentAlreadyExists } from '../../domain/payment-already-exists.js';
 import {
@@ -33,10 +33,9 @@ export class CreatePaymentUseCase {
     requesterId: string,
     request: PaymentCreateRequest,
   ): Promise<PaymentDto> {
-    const reservation = await this.catalog.findReservation(
-      request.reservationId,
+    const reservation = orNotFound(
+      await this.catalog.findReservation(request.reservationId),
     );
-    if (!reservation) throw notFound();
     if (reservation.userId !== requesterId) throw new ForbiddenException();
     if (await this.payments.existsForReservation(reservation.id))
       throw paymentAlreadyExists();

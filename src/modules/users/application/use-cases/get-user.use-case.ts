@@ -5,7 +5,7 @@ import {
   type IUserRepository,
   USER_REPOSITORY,
 } from '../../domain/repositories/user.repository.interface.js';
-import { loadUser } from '../load-user.js';
+import { orNotFound } from '../../../../common/not-found.js';
 
 @Injectable()
 export class GetUserUseCase {
@@ -16,6 +16,6 @@ export class GetUserUseCase {
 
   async execute(requesterId: string, id: string): Promise<UserDto> {
     await this.authorization.requireSelfOrAdmin(requesterId, id);
-    return (await loadUser(this.users, id)).toSnapshot();
+    return orNotFound(await this.users.findById(id)).toSnapshot();
   }
 }

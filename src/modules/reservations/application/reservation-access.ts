@@ -1,6 +1,6 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { DomainError } from '../../../common/domain-error.js';
-import { notFound } from '../../../common/not-found.js';
+import { notFound, orNotFound } from '../../../common/not-found.js';
 import { AuthorizationService } from '../../auth/application/authorization.service.js';
 import type {
   Reservation,
@@ -33,8 +33,7 @@ export class ReservationAccess {
     userId: string,
     scope: Scope,
   ): Promise<Reservation> {
-    const r = await this.repo.get(id);
-    if (!r) throw notFound();
+    const r = orNotFound(await this.repo.get(id));
     const isClient = r.toSnapshot().userId === userId;
     if (isClient && scope === 'party') return r;
     if (

@@ -5,7 +5,7 @@ import {
   type IRoomRepository,
   ROOM_REPOSITORY,
 } from '../../domain/repositories/room.repository.interface.js';
-import { loadRoom } from '../load-room.js';
+import { orNotFound } from '../../../../common/not-found.js';
 
 @Injectable()
 export class GetRoomAvailabilityUseCase {
@@ -17,7 +17,7 @@ export class GetRoomAvailabilityUseCase {
     roomId: string,
     query: AvailabilityQuery,
   ): Promise<AvailabilitySlot[]> {
-    await loadRoom(this.rooms, roomId);
+    orNotFound(await this.rooms.findById(roomId));
     return this.rooms.findAvailability(roomId, query);
   }
 }

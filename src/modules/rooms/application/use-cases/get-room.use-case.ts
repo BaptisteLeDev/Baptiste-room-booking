@@ -4,7 +4,7 @@ import {
   type IRoomRepository,
   ROOM_REPOSITORY,
 } from '../../domain/repositories/room.repository.interface.js';
-import { loadRoom } from '../load-room.js';
+import { orNotFound } from '../../../../common/not-found.js';
 
 @Injectable()
 export class GetRoomUseCase {
@@ -13,6 +13,6 @@ export class GetRoomUseCase {
   ) {}
 
   async execute(id: string): Promise<RoomDto> {
-    return (await loadRoom(this.rooms, id)).toSnapshot();
+    return orNotFound(await this.rooms.findById(id)).toSnapshot();
   }
 }

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { notFound } from '../../../../common/not-found.js';
+import { orNotFound } from '../../../../common/not-found.js';
 import type { ReservationUpdateRequest } from '../../../../contract.js';
 import type {
   Reservation,
@@ -29,14 +29,12 @@ export class UpdateReservationUseCase {
     req: ReservationUpdateRequest,
   ): Promise<ReservationSnapshot> {
     const r = await this.access.loadFor(id, userId, 'party');
-    const room = await this.catalog.find(r.roomId);
-    if (!room) throw notFound();
+    const room = orNotFound(await this.catalog.find(r.roomId));
     const changesSlot = req.startAt !== undefined || req.endAt !== undefined;
     if (!changesSlot) return this.amend(this.repo, r, room, req);
     // catalog is not tx-bound: read it before the lock to keep one connection
     return this.repo.exclusive(r.roomId, async (tx) => {
-      const fresh = await tx.get(id);
-      if (!fresh) throw notFound();
+      const fresh = orNotFound(await tx.get(id));
       return this.amend(tx, fresh, room, req);
     });
   }
