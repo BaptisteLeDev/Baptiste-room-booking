@@ -11,7 +11,7 @@ import type {
   RoomUpdateRequest,
 } from '../src/contract.js';
 import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
-import { createTestApp, resetDatabase } from './create-app.js';
+import { createTestApp, resetDatabase, loginAs } from './create-app.js';
 
 const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000';
 
@@ -29,8 +29,10 @@ const roomBody = (
 
 describe('Rooms routes (e2e)', () => {
   let app: INestApplication<App>;
+  let token: string;
 
-  const http = () => request(app.getHttpServer());
+  const http = () =>
+    request.agent(app.getHttpServer()).set('Authorization', `Bearer ${token}`);
 
   const createRoom = async (overrides?: Partial<RoomCreateRequest>) => {
     const res = await http()
@@ -46,6 +48,7 @@ describe('Rooms routes (e2e)', () => {
 
   beforeEach(async () => {
     await resetDatabase(app);
+    token = await loginAs(app);
   });
 
   afterAll(async () => {
@@ -105,6 +108,47 @@ describe('Rooms routes (e2e)', () => {
     const page = json<PaginatedRooms>(res);
     expect(page.total).toBe(1);
     expect(page.items[0].name).toBe('Grande salle');
+  });
+
+  it('GET /api/rooms filters by availability date, time range and state', async () => {
+    const date = '2026-11-02';
+    const availableRoom = await createRoom({ name: 'Disponible' });
+    const unavailableRoom = await createRoom({ name: 'Indisponible' });
+    await http()
+      .put(`/api/rooms/${availableRoom.id}/availability`)
+      .send({
+        date,
+        slots: [{ startTime: '09:00', endTime: '12:00', available: true }],
+      })
+      .expect(200);
+    await http()
+      .put(`/api/rooms/${unavailableRoom.id}/availability`)
+      .send({
+        date,
+        slots: [{ startTime: '09:00', endTime: '12:00', available: false }],
+      })
+      .expect(200);
+
+    const res = await http()
+      .get('/api/rooms')
+      .query({
+        date,
+        startTime: '10:00',
+        endTime: '11:00',
+        available: true,
+      })
+      .expect(200);
+    const page = json<PaginatedRooms>(res);
+    expect(page.total).toBe(1);
+    expect(page.items[0].name).toBe('Disponible');
+
+    const unavailable = await http()
+      .get('/api/rooms')
+      .query({ date, available: false })
+      .expect(200);
+    expect(json<PaginatedRooms>(unavailable).items.map((r) => r.name)).toEqual([
+      'Indisponible',
+    ]);
   });
 
   it('GET /api/rooms paginates with pageSize', async () => {
@@ -214,6 +258,25 @@ describe('Rooms routes (e2e)', () => {
       .query({ date })
       .expect(200);
     expect(after.body).toEqual([
+      { startTime: '10:00', endTime: '11:00', available: true },
+    ]);
+  });
+
+  it('PUT availability keeps explicitly unavailable slots', async () => {
+    const created = await createRoom();
+    const res = await http()
+      .put(`/api/rooms/${created.id}/availability`)
+      .send({
+        date: '2026-11-02',
+        slots: [
+          { startTime: '09:00', endTime: '10:00', available: false },
+          { startTime: '10:00', endTime: '11:00', available: true },
+        ],
+      })
+      .expect(200);
+
+    expect(res.body).toEqual([
+      { startTime: '09:00', endTime: '10:00', available: false },
       { startTime: '10:00', endTime: '11:00', available: true },
     ]);
   });

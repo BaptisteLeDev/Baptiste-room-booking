@@ -1,10 +1,12 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
 import { setupApp } from '../src/setup-app.js';
 import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
+import { hashPassword } from '../src/modules/auth/password.js';
 
 export async function createTestApp(): Promise<INestApplication<App>> {
   const moduleFixture = await Test.createTestingModule({
@@ -29,4 +31,23 @@ export async function resetDatabase(app: INestApplication<App>): Promise<void> {
     'TRUNCATE payments, reservations, availabilities, rooms RESTART IDENTITY CASCADE',
   );
   await dataSource.query('DELETE FROM users WHERE id <> $1', [userFixture.id]);
+}
+
+export const TEST_PASSWORD = 'password123';
+
+export async function loginAs(
+  app: INestApplication<App>,
+  email = userFixture.email,
+): Promise<string> {
+  await app
+    .get(DataSource)
+    .query('UPDATE users SET password_hash = $1 WHERE email = $2', [
+      await hashPassword(TEST_PASSWORD),
+      email,
+    ]);
+  const res = await request(app.getHttpServer())
+    .post('/api/auth/login')
+    .send({ email, password: TEST_PASSWORD })
+    .expect(200);
+  return (res.body as { accessToken: string }).accessToken;
 }

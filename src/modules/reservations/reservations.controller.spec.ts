@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { AuthorizationService } from '../auth/authorization.service.js';
 import { ReservationsService } from './application/reservations.service.js';
 import { RESERVATION_REPOSITORY } from './domain/reservation-repository.js';
 import { ROOM_CATALOG } from './domain/room-catalog.js';
@@ -18,6 +19,7 @@ describe('ReservationsController', () => {
           useClass: InMemoryReservationRepository,
         },
         { provide: ROOM_CATALOG, useValue: { find: async () => undefined } },
+        { provide: AuthorizationService, useValue: {} },
       ],
     }).compile();
 

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DomainError } from '../../../common/domain-error.js';
 import { notFound } from '../../../common/not-found.js';
@@ -18,6 +18,7 @@ import {
 } from '../domain/reservation-repository.js';
 import { ROOM_CATALOG, type RoomCatalog } from '../domain/room-catalog.js';
 import { TimeSlot } from '../domain/time-slot.js';
+import { AuthorizationService } from '../../auth/authorization.service.js';
 
 const CURRENCY = 'EUR';
 
@@ -35,6 +36,7 @@ export class ReservationsService {
     @Inject(RESERVATION_REPOSITORY)
     private readonly repo: ReservationRepository,
     @Inject(ROOM_CATALOG) private readonly catalog: RoomCatalog,
+    private readonly authorization: AuthorizationService,
   ) {}
 
   async createReservation(
@@ -62,27 +64,37 @@ export class ReservationsService {
     });
   }
 
-  async getReservation(id: string): Promise<ReservationSnapshot> {
-    return (await this.load(id)).toSnapshot();
+  async getReservation(
+    id: string,
+    userId: string,
+  ): Promise<ReservationSnapshot> {
+    return (await this.loadFor(id, userId, 'party')).toSnapshot();
   }
 
-  async cancelReservation(id: string): Promise<void> {
-    await this.transition(id, (r) => r.cancel());
+  async cancelReservation(id: string, userId: string): Promise<void> {
+    await this.transition(id, userId, 'party', (r) => r.cancel());
   }
 
-  async confirmReservation(id: string): Promise<ReservationSnapshot> {
-    return this.transition(id, (r) => r.confirm());
+  async confirmReservation(
+    id: string,
+    userId: string,
+  ): Promise<ReservationSnapshot> {
+    return this.transition(id, userId, 'manager', (r) => r.confirm());
   }
 
-  async rejectReservation(id: string): Promise<ReservationSnapshot> {
-    return this.transition(id, (r) => r.reject());
+  async rejectReservation(
+    id: string,
+    userId: string,
+  ): Promise<ReservationSnapshot> {
+    return this.transition(id, userId, 'manager', (r) => r.reject());
   }
 
   async updateReservation(
     id: string,
+    userId: string,
     req: ReservationUpdateRequest,
   ): Promise<ReservationSnapshot> {
-    const r = await this.load(id);
+    const r = await this.loadFor(id, userId, 'party');
     const room = await this.catalog.find(r.roomId);
     if (!room) throw notFound();
     const changesSlot = req.startAt !== undefined || req.endAt !== undefined;
@@ -144,11 +156,34 @@ export class ReservationsService {
     return r;
   }
 
+  /**
+   * party: booking client, room manager or admin. manager: room manager or
+   * admin. Strangers get 404 so ids do not leak; the client gets 403.
+   */
+  private async loadFor(
+    id: string,
+    userId: string,
+    scope: 'party' | 'manager',
+  ): Promise<Reservation> {
+    const r = await this.load(id);
+    const isClient = r.toSnapshot().userId === userId;
+    if (isClient && scope === 'party') return r;
+    if (
+      (await this.catalog.ownerOf(r.roomId)) === userId ||
+      (await this.authorization.isAdmin(userId))
+    ) {
+      return r;
+    }
+    throw isClient ? new ForbiddenException() : notFound();
+  }
+
   private async transition(
     id: string,
+    userId: string,
+    scope: 'party' | 'manager',
     act: (r: Reservation) => void,
   ): Promise<ReservationSnapshot> {
-    const r = await this.load(id);
+    const r = await this.loadFor(id, userId, scope);
     act(r);
     await this.repo.save(r);
     return r.toSnapshot();

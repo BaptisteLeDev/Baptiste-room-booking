@@ -5,3 +5,8 @@ export const CurrentUserId = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): string =>
     ctx.switchToHttp().getRequest<AuthenticatedRequest>().userId,
 );
+
+export const CurrentToken = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): string =>
+    ctx.switchToHttp().getRequest<AuthenticatedRequest>().token,
+);
