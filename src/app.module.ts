@@ -7,6 +7,9 @@ import { dataSourceOptions } from './database/data-source.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { RoomsModule } from './modules/rooms/rooms.module.js';
 import { ReservationsModule } from './modules/reservations/reservations.module.js';
+import { UsersModule } from './modules/users/users.module.js';
+import { PaymentsModule } from './modules/payments/payments.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -24,6 +27,9 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AuthModule,
     RoomsModule,
     ReservationsModule,
+    UsersModule,
+    PaymentsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

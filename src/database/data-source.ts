@@ -5,6 +5,7 @@ import { AvailabilityEntity } from '../modules/rooms/infra/availability.entity.j
 import { ReservationEntity } from '../modules/reservations/infra/reservation.entity.js';
 import { PaymentEntity } from '../modules/payments/infra/payment.entity.js';
 import { InitSchema1793106343582 } from './migrations/1793106343582-InitSchema.js';
+import { AddAvailabilityAvailable1793106500000 } from './migrations/1793106500000-AddAvailabilityAvailable.js';
 import { SeedDemoUser1793106400000 } from './migrations/1793106400000-SeedDemoUser.js';
 
 export const dataSourceOptions: DataSourceOptions = {
@@ -21,7 +22,11 @@ export const dataSourceOptions: DataSourceOptions = {
     ReservationEntity,
     PaymentEntity,
   ],
-  migrations: [InitSchema1793106343582, SeedDemoUser1793106400000],
+  migrations: [
+    InitSchema1793106343582,
+    SeedDemoUser1793106400000,
+    AddAvailabilityAvailable1793106500000,
+  ],
   synchronize: false,
   logging: process.env.DB_LOGGING === 'true',
 };

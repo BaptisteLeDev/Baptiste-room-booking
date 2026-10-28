@@ -1,43 +1,40 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
+import { randomUUID } from 'node:crypto';
 import { Repository } from 'typeorm';
 import { hasPgCode } from '../../common/database/pg-error.js';
-import { DomainError } from '../../common/domain-error.js';
-import { notFound } from '../../common/not-found.js';
-import type { RegisterRequest, User } from '../../contract.js';
+import type {
+  AuthResponse,
+  ChangePasswordRequest,
+  LoginRequest,
+  RegisterRequest,
+  User,
+} from '../../contract.js';
+import { emailUsed, normalizeEmail, toUser } from '../users/user.mapper.js';
 import { UserEntity } from '../users/infra/user.entity.js';
-import { userFixture } from './fixtures/user.fixture.js';
-import { hashPassword } from './password.js';
+import { hashPassword, verifyPassword } from './password.js';
+import { RevokedTokens } from './revoked-tokens.js';
 
 const UNIQUE_VIOLATION = '23505';
 
-const emailUsed = () =>
-  new DomainError(
-    'conflict',
-    'EMAIL_ALREADY_USED',
-    'Cette adresse e-mail est déjà utilisée.',
-  );
-
-function toUser(e: UserEntity): User {
-  return {
-    id: e.id,
-    firstName: e.firstName,
-    lastName: e.lastName,
-    email: e.email,
-    role: e.role as User['role'],
-    createdAt: e.createdAt.toISOString(),
-  };
-}
+const invalidCredentials = () =>
+  new UnauthorizedException({
+    code: 'INVALID_CREDENTIALS',
+    message: 'Identifiants invalides.',
+  });
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly users: Repository<UserEntity>,
+    private readonly jwt: JwtService,
+    private readonly revoked: RevokedTokens,
   ) {}
 
   async register(body: RegisterRequest): Promise<User> {
-    const email = body.email.trim().toLowerCase();
+    const email = normalizeEmail(body.email);
     if (await this.users.existsBy({ email })) throw emailUsed();
     try {
       const saved = await this.users.save(
@@ -58,10 +55,46 @@ export class AuthService {
     }
   }
 
-  async me(): Promise<User> {
-    // ponytail: until auth guard
-    const user = await this.users.findOneBy({ id: userFixture.id });
-    if (!user) throw notFound();
+  async login(body: LoginRequest): Promise<AuthResponse> {
+    const user = await this.users.findOneBy({
+      email: normalizeEmail(body.email),
+    });
+    if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
+      throw invalidCredentials();
+    }
+    return {
+      accessToken: await this.jwt.signAsync({
+        sub: user.id,
+        jti: randomUUID(),
+      }),
+      expiresIn: 3600,
+      user: toUser(user),
+    };
+  }
+
+  async me(userId: string): Promise<User> {
+    const user = await this.users.findOneBy({ id: userId });
+    if (!user) throw new UnauthorizedException();
     return toUser(user);
+  }
+
+  async logout(token: string): Promise<void> {
+    const { exp } = this.jwt.decode<{ exp: number }>(token);
+    this.revoked.revoke(token, exp);
+  }
+
+  async changePassword(
+    userId: string,
+    body: ChangePasswordRequest,
+  ): Promise<void> {
+    const user = await this.users.findOneBy({ id: userId });
+    if (
+      !user ||
+      !(await verifyPassword(body.currentPassword, user.passwordHash))
+    ) {
+      throw invalidCredentials();
+    }
+    user.passwordHash = await hashPassword(body.newPassword);
+    await this.users.save(user);
   }
 }

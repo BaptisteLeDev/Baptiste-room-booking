@@ -14,7 +14,7 @@ import { ReservationEntity } from './reservation.entity.js';
 
 const EXCLUSION_VIOLATION = '23P01';
 
-const toSnapshot = (e: ReservationEntity): ReservationSnapshot => ({
+export const toSnapshot = (e: ReservationEntity): ReservationSnapshot => ({
   id: e.id,
   roomId: e.roomId,
   userId: e.userId,

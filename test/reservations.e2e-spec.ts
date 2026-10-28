@@ -12,7 +12,7 @@ import type {
   Room,
   RoomCreateRequest,
 } from '../src/contract.js';
-import { createTestApp, resetDatabase } from './create-app.js';
+import { createTestApp, resetDatabase, loginAs } from './create-app.js';
 
 const UNKNOWN_ID = '7b1e4c2d-5a3f-4d8e-9c6b-1f2a3b4c5d6e';
 
@@ -25,7 +25,9 @@ const iso = (day: number, hour: number) =>
 describe('Reservations routes (e2e)', () => {
   let app: INestApplication<App>;
   let roomId: string;
-  const http = () => request(app.getHttpServer());
+  let token: string;
+  const http = () =>
+    request.agent(app.getHttpServer()).set('Authorization', `Bearer ${token}`);
 
   const createRoom = async (): Promise<string> => {
     const body: RoomCreateRequest = {
@@ -65,6 +67,7 @@ describe('Reservations routes (e2e)', () => {
 
   beforeEach(async () => {
     await resetDatabase(app);
+    token = await loginAs(app);
     roomId = await createRoom();
   });
 

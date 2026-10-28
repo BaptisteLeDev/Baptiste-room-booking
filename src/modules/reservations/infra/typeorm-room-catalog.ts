@@ -21,4 +21,12 @@ export class TypeOrmRoomCatalog implements RoomCatalog {
       ? { capacity: room.capacity, pricePerHour: room.pricePerHour }
       : undefined;
   }
+
+  async ownerOf(roomId: string): Promise<string | undefined> {
+    const room = await this.rooms.findOne({
+      where: { id: roomId },
+      select: ['ownerId'],
+    });
+    return room?.ownerId;
+  }
 }

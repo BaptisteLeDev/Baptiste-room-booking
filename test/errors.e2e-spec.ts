@@ -2,13 +2,15 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { afterAll, beforeAll, describe, it } from 'vitest';
-import { createTestApp } from './create-app.js';
+import { createTestApp, loginAs } from './create-app.js';
 
 describe('error format (e2e)', () => {
   let app: INestApplication<App>;
+  let token: string;
 
   beforeAll(async () => {
     app = await createTestApp();
+    token = await loginAs(app);
   });
 
   afterAll(async () => {
@@ -26,6 +28,7 @@ describe('error format (e2e)', () => {
   it('bad uuid -> 400 VALIDATION_ERROR', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/reservations/not-a-uuid')
+      .set('Authorization', `Bearer ${token}`)
       .expect(400);
     expect(res.body).toEqual({
       code: 'VALIDATION_ERROR',
@@ -36,6 +39,7 @@ describe('error format (e2e)', () => {
   it('malformed JSON -> 400 VALIDATION_ERROR', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/reservations')
+      .set('Authorization', `Bearer ${token}`)
       .set('Content-Type', 'application/json')
       .send('{bad')
       .expect(400);
@@ -48,6 +52,7 @@ describe('error format (e2e)', () => {
   it('invalid body -> details.fields per field', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/reservations')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         roomId: 'not-a-uuid',
         startAt: '2026-11-02T09:00:00Z',

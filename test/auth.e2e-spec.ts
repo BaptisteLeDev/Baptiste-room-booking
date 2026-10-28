@@ -4,13 +4,19 @@ import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import type {
   ApiError,
+  AuthResponse,
   ChangePasswordRequest,
   LoginRequest,
   RegisterRequest,
   User,
 } from '../src/contract.js';
 import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
-import { createTestApp, resetDatabase } from './create-app.js';
+import {
+  createTestApp,
+  loginAs,
+  resetDatabase,
+  TEST_PASSWORD,
+} from './create-app.js';
 
 const json = <T>(res: { body: unknown }) => res.body as T;
 
@@ -95,20 +101,48 @@ describe('Auth routes (e2e)', () => {
     expect(json<ApiError>(res).code).toBe('VALIDATION_ERROR');
   });
 
-  it('POST /api/auth/login -> 200', () => {
+  it('POST /api/auth/login -> 200 with token, expiry and user', async () => {
+    await loginAs(app);
     const body: LoginRequest = {
-      email: 'ada@example.com',
-      password: 'longenough',
+      email: userFixture.email,
+      password: TEST_PASSWORD,
     };
-    return http().post('/api/auth/login').send(body).expect(200);
+    const res = await http().post('/api/auth/login').send(body).expect(200);
+    expect(json<AuthResponse>(res).accessToken).toEqual(expect.any(String));
+    expect(res.body).toMatchObject({
+      expiresIn: 3600,
+      user: { id: userFixture.id, email: userFixture.email },
+    });
   });
 
-  it('POST /api/auth/logout -> 204', () => {
-    return http().post('/api/auth/logout').expect(204);
+  it.each([
+    ['unknown email', 'missing@example.com', TEST_PASSWORD],
+    ['wrong password', userFixture.email, 'wrongpass'],
+  ])(
+    'POST /api/auth/login -> 401 INVALID_CREDENTIALS on %s',
+    async (_, email, password) => {
+      await loginAs(app);
+      const res = await http()
+        .post('/api/auth/login')
+        .send({ email, password })
+        .expect(401);
+      expect(res.body).toEqual({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Identifiants invalides.',
+      });
+    },
+  );
+
+  it('GET /api/auth/me -> 401 without token', () => {
+    return http().get('/api/auth/me').expect(401);
   });
 
-  it('GET /api/auth/me -> 200 demo user', async () => {
-    const res = await http().get('/api/auth/me').expect(200);
+  it('GET /api/auth/me -> 200 for the authenticated user', async () => {
+    const token = await loginAs(app);
+    const res = await http()
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
     expect(res.body).toMatchObject({
       id: userFixture.id,
       email: userFixture.email,
@@ -117,11 +151,40 @@ describe('Auth routes (e2e)', () => {
     expect(res.body).not.toHaveProperty('passwordHash');
   });
 
-  it('PATCH /api/auth/password -> 204', () => {
+  it('POST /api/auth/logout -> 204 then same token -> 401', async () => {
+    const token = await loginAs(app);
+    await http()
+      .post('/api/auth/logout')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(204);
+    await http()
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(401);
+  });
+
+  it('PATCH /api/auth/password -> 204 then login with new password', async () => {
+    const token = await loginAs(app);
     const body: ChangePasswordRequest = {
-      currentPassword: 'longenough',
+      currentPassword: TEST_PASSWORD,
       newPassword: 'newsecret',
     };
-    return http().patch('/api/auth/password').send(body).expect(204);
+    await http()
+      .patch('/api/auth/password')
+      .set('Authorization', `Bearer ${token}`)
+      .send(body)
+      .expect(204);
+    await http()
+      .post('/api/auth/login')
+      .send({ email: userFixture.email, password: 'newsecret' })
+      .expect(200);
+  });
+
+  it('GET /api/rooms -> 200 without token (public)', () => {
+    return http().get('/api/rooms').expect(200);
+  });
+
+  it('POST /api/rooms -> 401 without token', () => {
+    return http().post('/api/rooms').send({}).expect(401);
   });
 });

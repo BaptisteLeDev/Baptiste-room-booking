@@ -13,20 +13,23 @@ import type {
   RoomStatus,
   RoomUpdateRequest,
 } from '../../contract.js';
-import { userFixture } from '../auth/fixtures/user.fixture.js';
+import { AuthorizationService } from '../auth/authorization.service.js';
 import { ListRoomsQueryDto } from './dto/list-rooms-query.dto.js';
 import { RoomEntity } from './infra/room.entity.js';
 
 const FK_VIOLATION = '23503';
 
+// availability slot `a` is open and no active reservation overlaps it
+const SLOT_OPEN = `(a.available AND NOT EXISTS (
+  SELECT 1 FROM reservations res
+  WHERE res.room_id = a.room_id AND res.status IN ('PENDING','CONFIRMED')
+    AND tstzrange(res.start_time, res.end_time) && tstzrange(a.start_time, a.end_time)
+))`;
+
 const AVAILABILITY_SQL = `
 SELECT to_char(a.start_time AT TIME ZONE 'Europe/Paris', 'HH24:MI') AS "startTime",
        to_char(a.end_time AT TIME ZONE 'Europe/Paris', 'HH24:MI') AS "endTime",
-       NOT EXISTS (
-         SELECT 1 FROM reservations r
-         WHERE r.room_id = a.room_id AND r.status IN ('PENDING','CONFIRMED')
-           AND tstzrange(r.start_time, r.end_time) && tstzrange(a.start_time, a.end_time)
-       ) AS "available"
+       ${SLOT_OPEN} AS "available"
 FROM availabilities a
 WHERE a.room_id = $1
   AND (a.start_time AT TIME ZONE 'Europe/Paris')::date = $2::date
@@ -56,6 +59,7 @@ export class RoomsService {
     @InjectRepository(RoomEntity)
     private readonly rooms: Repository<RoomEntity>,
     private readonly dataSource: DataSource,
+    private readonly authorization: AuthorizationService,
   ) {}
 
   async list(q: ListRoomsQueryDto): Promise<PaginatedRooms> {
@@ -65,7 +69,6 @@ export class RoomsService {
       .addOrderBy('r.id')
       .skip((q.page - 1) * q.pageSize)
       .take(q.pageSize);
-    // ponytail: availability filters ignored until search epic
     if (q.search)
       qb.andWhere('(r.name ILIKE :s OR r.description ILIKE :s)', {
         s: `%${q.search}%`,
@@ -75,6 +78,40 @@ export class RoomsService {
       qb.andWhere('r.capacity >= :cmin', { cmin: q.capacityMin });
     if (q.capacityMax !== undefined)
       qb.andWhere('r.capacity <= :cmax', { cmax: q.capacityMax });
+    if (q.date) {
+      const availabilityFilters = [
+        `a.room_id = r.id`,
+        `(a.start_time AT TIME ZONE 'Europe/Paris')::date = CAST(:availabilityDate AS date)`,
+      ];
+      if (q.startTime) {
+        availabilityFilters.push(
+          `(a.end_time AT TIME ZONE 'Europe/Paris')::time > CAST(:availabilityStart AS time)`,
+        );
+      }
+      if (q.endTime) {
+        availabilityFilters.push(
+          `(a.start_time AT TIME ZONE 'Europe/Paris')::time < CAST(:availabilityEnd AS time)`,
+        );
+      }
+      if (q.available !== undefined) {
+        availabilityFilters.push(`${SLOT_OPEN} = :availabilityAvailable`);
+      }
+      qb.andWhere(
+        `EXISTS (
+        SELECT 1
+        FROM availabilities a
+        WHERE ${availabilityFilters.join(' AND ')}
+      )`,
+        {
+          availabilityDate: q.date,
+          ...(q.startTime && { availabilityStart: q.startTime }),
+          ...(q.endTime && { availabilityEnd: q.endTime }),
+          ...(q.available !== undefined && {
+            availabilityAvailable: q.available,
+          }),
+        },
+      );
+    }
     const [items, total] = await qb.getManyAndCount();
     return {
       page: q.page,
@@ -84,11 +121,11 @@ export class RoomsService {
     };
   }
 
-  async create(body: RoomCreateRequest): Promise<Room> {
-    // ponytail: until auth guard
+  async create(userId: string, body: RoomCreateRequest): Promise<Room> {
+    await this.authorization.assertManager(userId);
     const saved = await this.rooms.save(
       this.rooms.create({
-        ownerId: userFixture.id,
+        ownerId: userId,
         name: body.name,
         description: body.description ?? null,
         capacity: body.capacity,
@@ -106,8 +143,12 @@ export class RoomsService {
     return toRoom(await this.load(id));
   }
 
-  async update(id: string, body: RoomUpdateRequest): Promise<Room> {
-    const room = await this.load(id);
+  async update(
+    id: string,
+    userId: string,
+    body: RoomUpdateRequest,
+  ): Promise<Room> {
+    const room = await this.loadManaged(id, userId);
     Object.assign(
       room,
       Object.fromEntries(
@@ -117,10 +158,10 @@ export class RoomsService {
     return toRoom(await this.rooms.save(room));
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, userId: string): Promise<void> {
+    await this.loadManaged(id, userId);
     try {
-      const { affected } = await this.rooms.delete(id);
-      if (!affected) throw notFound();
+      await this.rooms.delete(id);
     } catch (e) {
       if (hasPgCode(e, FK_VIOLATION)) {
         throw new DomainError(
@@ -148,23 +189,24 @@ export class RoomsService {
 
   async setAvailability(
     roomId: string,
+    userId: string,
     body: AvailabilityUpdateRequest,
   ): Promise<AvailabilitySlot[]> {
-    await this.load(roomId);
+    await this.loadManaged(roomId, userId);
     await this.dataSource.transaction(async (tx) => {
       await tx.query(
         `DELETE FROM availabilities
          WHERE room_id = $1 AND (start_time AT TIME ZONE 'Europe/Paris')::date = $2::date`,
         [roomId, body.date],
       );
-      // Unavailable slots are not stored: availability is computed on read.
-      for (const s of body.slots.filter((s) => s.available)) {
+      for (const s of body.slots) {
         await tx.query(
-          `INSERT INTO availabilities (room_id, start_time, end_time)
+          `INSERT INTO availabilities (room_id, start_time, end_time, available)
            VALUES ($1,
              ($2::date + $3::time) AT TIME ZONE 'Europe/Paris',
-             ($2::date + $4::time) AT TIME ZONE 'Europe/Paris')`,
-          [roomId, body.date, s.startTime, s.endTime],
+             ($2::date + $4::time) AT TIME ZONE 'Europe/Paris',
+             $5)`,
+          [roomId, body.date, s.startTime, s.endTime, s.available],
         );
       }
     });
@@ -174,6 +216,12 @@ export class RoomsService {
   private async load(id: string): Promise<RoomEntity> {
     const room = await this.rooms.findOneBy({ id });
     if (!room) throw notFound();
+    return room;
+  }
+
+  private async loadManaged(id: string, userId: string): Promise<RoomEntity> {
+    const room = await this.load(id);
+    await this.authorization.assertOwnerOrAdmin(userId, room.ownerId);
     return room;
   }
 }

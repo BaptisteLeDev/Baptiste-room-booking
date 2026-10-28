@@ -27,4 +27,7 @@ export class AvailabilityEntity {
 
   @Column({ type: 'timestamptz', name: 'end_time' })
   endTime!: Date;
+
+  @Column({ type: 'boolean', default: true })
+  available!: boolean;
 }

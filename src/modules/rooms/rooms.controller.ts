@@ -13,6 +13,8 @@ import {
   Query,
 } from '@nestjs/common';
 import type { AvailabilitySlot, PaginatedRooms, Room } from '../../contract.js';
+import { CurrentUserId } from '../auth/current-user.decorator.js';
+import { Public } from '../auth/public.decorator.js';
 import { CreateRoomDto } from './dto/create-room.dto.js';
 import { GetRoomAvailabilityQueryDto } from './dto/get-room-availability-query.dto.js';
 import { ListRoomsQueryDto } from './dto/list-rooms-query.dto.js';
@@ -24,6 +26,7 @@ import { RoomsService } from './rooms.service.js';
 export class RoomsController {
   constructor(private readonly rooms: RoomsService) {}
 
+  @Public()
   @Get()
   listRooms(@Query() query: ListRoomsQueryDto): Promise<PaginatedRooms> {
     return this.rooms.list(query);
@@ -31,10 +34,14 @@ export class RoomsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  createRoom(@Body() body: CreateRoomDto): Promise<Room> {
-    return this.rooms.create(body);
+  createRoom(
+    @Body() body: CreateRoomDto,
+    @CurrentUserId() userId: string,
+  ): Promise<Room> {
+    return this.rooms.create(userId, body);
   }
 
+  @Public()
   @Get(':roomId')
   getRoom(@Param('roomId', ParseUUIDPipe) roomId: string): Promise<Room> {
     return this.rooms.get(roomId);
@@ -44,16 +51,21 @@ export class RoomsController {
   updateRoom(
     @Param('roomId', ParseUUIDPipe) roomId: string,
     @Body() body: UpdateRoomDto,
+    @CurrentUserId() userId: string,
   ): Promise<Room> {
-    return this.rooms.update(roomId, body);
+    return this.rooms.update(roomId, userId, body);
   }
 
   @Delete(':roomId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  deleteRoom(@Param('roomId', ParseUUIDPipe) roomId: string): Promise<void> {
-    return this.rooms.delete(roomId);
+  deleteRoom(
+    @Param('roomId', ParseUUIDPipe) roomId: string,
+    @CurrentUserId() userId: string,
+  ): Promise<void> {
+    return this.rooms.delete(roomId, userId);
   }
 
+  @Public()
   @Get(':roomId/availability')
   getRoomAvailability(
     @Param('roomId', ParseUUIDPipe) roomId: string,
@@ -66,7 +78,8 @@ export class RoomsController {
   setRoomAvailability(
     @Param('roomId', ParseUUIDPipe) roomId: string,
     @Body() body: UpdateAvailabilityDto,
+    @CurrentUserId() userId: string,
   ): Promise<AvailabilitySlot[]> {
-    return this.rooms.setAvailability(roomId, body);
+    return this.rooms.setAvailability(roomId, userId, body);
   }
 }
