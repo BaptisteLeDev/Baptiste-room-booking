@@ -34,4 +34,4 @@ Couches : `domain/` (entité `Room` avec invariants, port `IRoomRepository`, tok
 
 ## ADR
 
-Aucun.
+- [0002 - Ports à jeton](../../../docs/decisions/0002-ports-a-jeton.md)
