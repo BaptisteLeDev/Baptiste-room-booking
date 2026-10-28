@@ -10,6 +10,7 @@ import { GetReservationUseCase } from './get-reservation.use-case.js';
 import { ListReservationsUseCase } from './list-reservations.use-case.js';
 import { RejectReservationUseCase } from './reject-reservation.use-case.js';
 import { UpdateReservationUseCase } from './update-reservation.use-case.js';
+import { rejection } from '../../../../../test/helpers/rejection.js';
 
 const catalog: RoomCatalog = {
   find: async (id) =>
@@ -27,21 +28,12 @@ const at = (day: string, a: string, b: string) => ({
   endAt: `2026-11-${day}T${b}:00:00Z`,
 });
 
-const rejection = async (p: Promise<unknown>): Promise<DomainError> => {
-  try {
-    await p;
-  } catch (e) {
-    return e as DomainError;
-  }
-  throw new Error('did not reject');
-};
-
 const useCases = () => {
   const repo = new InMemoryReservationRepository();
   const access = new ReservationAccess(repo, catalog, authorization as never);
   const create = new CreateReservationUseCase(repo, catalog);
   const get = new GetReservationUseCase(access);
-  const update = new UpdateReservationUseCase(access);
+  const update = new UpdateReservationUseCase(access, repo, catalog);
   const cancel = new CancelReservationUseCase(access);
   const confirm = new ConfirmReservationUseCase(access);
   const reject = new RejectReservationUseCase(access);
@@ -80,14 +72,16 @@ describe('reservation use cases', () => {
   });
 
   it('unknown room -> not_found', async () => {
-    const e = await rejection(create('nope', '02', '09', '12'));
+    const e = await rejection<DomainError>(create('nope', '02', '09', '12'));
     expect(e.kind).toBe('not_found');
     expect(e.code).toBe('NOT_FOUND');
   });
 
   it('overlap -> conflict SLOT_UNAVAILABLE', async () => {
     await create('room1', '02', '09', '12');
-    const e = await rejection(create('room1', '02', '11', '13', 'u2'));
+    const e = await rejection<DomainError>(
+      create('room1', '02', '11', '13', 'u2'),
+    );
     expect(e.kind).toBe('conflict');
     expect(e.code).toBe('SLOT_UNAVAILABLE');
   });
@@ -108,7 +102,7 @@ describe('reservation use cases', () => {
     const a = await create('room1', '02', '09', '12');
     await svc.confirmReservation(a.id, 'owner');
     await create('room1', '02', '13', '15');
-    const e = await rejection(
+    const e = await rejection<DomainError>(
       svc.updateReservation(a.id, 'u1', at('02', '14', '16')),
     );
     expect(e.code).toBe('SLOT_UNAVAILABLE');
@@ -130,7 +124,7 @@ describe('reservation use cases', () => {
     const a = await create('room1', '02', '09', '12');
     await svc.cancelReservation(a.id, 'u1');
     await create('room1', '02', '13', '15');
-    const e = await rejection(
+    const e = await rejection<DomainError>(
       svc.updateReservation(a.id, 'u1', at('02', '14', '16')),
     );
     expect(e.code).toBe('RESERVATION_STATUS_CONFLICT');
@@ -138,7 +132,7 @@ describe('reservation use cases', () => {
 
   it('PATCH only endAt earlier than startAt -> invalid', async () => {
     const a = await create('room1', '02', '09', '12');
-    const e = await rejection(
+    const e = await rejection<DomainError>(
       svc.updateReservation(a.id, 'u1', { endAt: '2026-11-02T08:00:00Z' }),
     );
     expect(e.kind).toBe('invalid');
@@ -152,7 +146,7 @@ describe('reservation use cases', () => {
       svc.rejectReservation('x', 'owner'),
       svc.updateReservation('x', 'u1', { comment: 'c' }),
     ]) {
-      expect((await rejection(p)).kind).toBe('not_found');
+      expect((await rejection<DomainError>(p)).kind).toBe('not_found');
     }
   });
 
@@ -183,16 +177,19 @@ describe('reservation use cases', () => {
   it('does not expose or mutate another user reservation', async () => {
     const r = await create('room1', '06', '09', '10', 'u1');
 
-    expect((await rejection(svc.getReservation(r.id, 'u2'))).kind).toBe(
-      'not_found',
-    );
     expect(
-      (await rejection(svc.updateReservation(r.id, 'u2', { comment: 'x' })))
-        .kind,
+      (await rejection<DomainError>(svc.getReservation(r.id, 'u2'))).kind,
     ).toBe('not_found');
-    expect((await rejection(svc.cancelReservation(r.id, 'u2'))).kind).toBe(
-      'not_found',
-    );
+    expect(
+      (
+        await rejection<DomainError>(
+          svc.updateReservation(r.id, 'u2', { comment: 'x' }),
+        )
+      ).kind,
+    ).toBe('not_found');
+    expect(
+      (await rejection<DomainError>(svc.cancelReservation(r.id, 'u2'))).kind,
+    ).toBe('not_found');
     expect((await svc.getReservation(r.id, 'u1')).comment).toBeUndefined();
   });
 });

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { notFound } from '../../../../common/not-found.js';
 import type { ReservationUpdateRequest } from '../../../../contract.js';
 import type {
@@ -6,27 +6,35 @@ import type {
   ReservationSnapshot,
   RoomTerms,
 } from '../../domain/reservation.js';
-import type { ReservationRepository } from '../../domain/reservation-repository.js';
+import {
+  RESERVATION_REPOSITORY,
+  type ReservationRepository,
+} from '../../domain/reservation-repository.js';
+import { ROOM_CATALOG, type RoomCatalog } from '../../domain/room-catalog.js';
 import { TimeSlot } from '../../domain/time-slot.js';
 import { assertFree, ReservationAccess } from '../reservation-access.js';
 
 @Injectable()
 export class UpdateReservationUseCase {
-  constructor(private readonly access: ReservationAccess) {}
+  constructor(
+    private readonly access: ReservationAccess,
+    @Inject(RESERVATION_REPOSITORY)
+    private readonly repo: ReservationRepository,
+    @Inject(ROOM_CATALOG) private readonly catalog: RoomCatalog,
+  ) {}
 
   async execute(
     id: string,
     userId: string,
     req: ReservationUpdateRequest,
   ): Promise<ReservationSnapshot> {
-    const { repo, catalog } = this.access;
     const r = await this.access.loadFor(id, userId, 'party');
-    const room = await catalog.find(r.roomId);
+    const room = await this.catalog.find(r.roomId);
     if (!room) throw notFound();
     const changesSlot = req.startAt !== undefined || req.endAt !== undefined;
-    if (!changesSlot) return this.amend(repo, r, room, req);
+    if (!changesSlot) return this.amend(this.repo, r, room, req);
     // catalog is not tx-bound: read it before the lock to keep one connection
-    return repo.exclusive(r.roomId, async (tx) => {
+    return this.repo.exclusive(r.roomId, async (tx) => {
       const fresh = await tx.get(id);
       if (!fresh) throw notFound();
       return this.amend(tx, fresh, room, req);

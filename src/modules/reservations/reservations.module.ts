@@ -18,10 +18,7 @@ import { TypeOrmRoomCatalog } from './infra/typeorm-room-catalog.js';
 import { ReservationsController } from './reservations.controller.js';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([ReservationEntity, RoomRow]),
-    AuthModule,
-  ],
+  imports: [TypeOrmModule.forFeature([ReservationEntity, RoomRow]), AuthModule],
   controllers: [ReservationsController],
   providers: [
     ReservationAccess,

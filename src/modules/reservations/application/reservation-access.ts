@@ -19,8 +19,8 @@ type Scope = 'party' | 'manager';
 export class ReservationAccess {
   constructor(
     @Inject(RESERVATION_REPOSITORY)
-    readonly repo: ReservationRepository,
-    @Inject(ROOM_CATALOG) readonly catalog: RoomCatalog,
+    private readonly repo: ReservationRepository,
+    @Inject(ROOM_CATALOG) private readonly catalog: RoomCatalog,
     private readonly authorization: AuthorizationService,
   ) {}
 
@@ -28,7 +28,11 @@ export class ReservationAccess {
    * party: booking client, room manager or admin. manager: room manager or
    * admin. Strangers get 404 so ids do not leak; the client gets 403.
    */
-  async loadFor(id: string, userId: string, scope: Scope): Promise<Reservation> {
+  async loadFor(
+    id: string,
+    userId: string,
+    scope: Scope,
+  ): Promise<Reservation> {
     const r = await this.repo.get(id);
     if (!r) throw notFound();
     const isClient = r.toSnapshot().userId === userId;
