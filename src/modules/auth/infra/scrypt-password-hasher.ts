@@ -55,22 +55,20 @@ export async function verifyPassword(
   if (!parsed) return false;
   const expected = Buffer.from(parsed.hash, 'hex');
   if (!parsed.salt || expected.length !== KEYLEN) return false;
-  const actual = await derive(
-    password,
-    Buffer.from(parsed.salt, 'hex'),
-    parsed.params,
-  );
+  const salt = Buffer.from(parsed.salt, 'hex');
+  const actual = await derive(password, salt, parsed.params);
+  // Every verify costs LEGACY + CURRENT: legacy accounts must not answer
+  // faster than the unknown-email dummy. ponytail: drop once none remain.
+  await derive(password, salt, isCurrent(parsed.params) ? LEGACY : CURRENT);
   return timingSafeEqual(expected, actual);
 }
 
+const isCurrent = ({ N, r, p }: ScryptParams) =>
+  N === CURRENT.N && r === CURRENT.r && p === CURRENT.p;
+
 export function passwordNeedsRehash(stored: string): boolean {
   const parsed = parse(stored);
-  return (
-    !parsed ||
-    parsed.params.N !== CURRENT.N ||
-    parsed.params.r !== CURRENT.r ||
-    parsed.params.p !== CURRENT.p
-  );
+  return !parsed || !isCurrent(parsed.params);
 }
 
 @Injectable()
