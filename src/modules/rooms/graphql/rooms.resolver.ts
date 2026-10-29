@@ -1,6 +1,16 @@
 import { ParseUUIDPipe } from '@nestjs/common';
-import { Args, ID, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  ID,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import type { RoomSnapshot } from '../domain/entities/room.entity.js';
+import type { AvailabilityPeriod } from '../domain/repositories/room.repository.interface.js';
+import { AvailabilityLoader } from './availability.loader.js';
+import { AvailabilityType } from './availability.type.js';
 import type { Room } from '../../../contract.js';
 import { GetRoomUseCase } from '../application/use-cases/get-room.use-case.js';
 import { ListRoomsUseCase } from '../application/use-cases/list-rooms.use-case.js';
@@ -12,6 +22,7 @@ export class RoomsResolver {
   constructor(
     private readonly getRoom: GetRoomUseCase,
     private readonly listRooms: ListRoomsUseCase,
+    private readonly availabilities: AvailabilityLoader,
   ) {}
 
   @Query(() => RoomType)
@@ -34,5 +45,10 @@ export class RoomsResolver {
       priceMax: maxPricePerHour,
     });
     return result.items;
+  }
+
+  @ResolveField('availabilities', () => [AvailabilityType])
+  availabilitiesOf(@Parent() room: Room): Promise<AvailabilityPeriod[]> {
+    return this.availabilities.byRoom.load(room.id);
   }
 }

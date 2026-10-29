@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
+import { AvailabilityEntity } from '../src/modules/rooms/infra/availability.entity.js';
 import { RoomEntity } from '../src/modules/rooms/infra/room.entity.js';
 import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
 import { createTestApp, resetDatabase, loginAs } from './create-app.js';
@@ -120,6 +121,59 @@ describe('GraphQL read API (e2e)', () => {
         filter: { pageSize: 101 },
       }).expect(200);
       expect(body(res).errors?.[0].extensions.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('Room.availabilities', () => {
+    const DAYS = ['2020-01-01', '2099-11-03', '2099-11-02'];
+    let roomIds: string[];
+
+    beforeEach(async () => {
+      roomIds = [];
+      for (const capacity of [5, 12, 20]) {
+        const room = await saveRoom({ name: `Salle ${capacity}`, capacity });
+        roomIds.push(room.id);
+        await seed.getRepository(AvailabilityEntity).insert(
+          DAYS.map((day) => ({
+            roomId: room.id,
+            startTime: new Date(`${day}T09:00:00Z`),
+            endTime: new Date(`${day}T12:00:00Z`),
+          })),
+        );
+      }
+    });
+
+    it('availabilities lists upcoming periods only', async () => {
+      const res = await gql(
+        app,
+        token,
+        'query ($id: ID!) { room(id: $id) { availabilities { startAt } } }',
+        { id: roomIds[0] },
+      ).expect(200);
+      expect(body(res).errors).toBeUndefined();
+      expect(body(res).data?.room).toEqual({
+        availabilities: [
+          { startAt: '2099-11-02T09:00:00.000Z' },
+          { startAt: '2099-11-03T09:00:00.000Z' },
+        ],
+      });
+    });
+
+    it('searchRooms with availabilities runs one availability query', async () => {
+      const logQuery = vi.spyOn(seed.logger, 'logQuery');
+      const res = await gql(
+        app,
+        token,
+        '{ searchRooms { availabilities { startAt } } }',
+      ).expect(200);
+      const sql = logQuery.mock.calls.map(([q]) => q);
+      logQuery.mockRestore();
+      expect(body(res).errors).toBeUndefined();
+      const rooms = body(res).data?.searchRooms as {
+        availabilities: unknown[];
+      }[];
+      expect(rooms.map((r) => r.availabilities.length)).toEqual([2, 2, 2]);
+      expect(sql.filter((q) => q.includes('availabilities'))).toHaveLength(1);
     });
   });
 });
