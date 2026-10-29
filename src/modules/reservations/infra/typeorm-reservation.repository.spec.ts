@@ -3,6 +3,7 @@ import { QueryFailedError, type Repository } from 'typeorm';
 import { DomainError } from '../../../common/domain-error.js';
 import { Reservation } from '../domain/reservation.js';
 import { TimeSlot } from '../domain/time-slot.js';
+import { ReservationStatus } from '../domain/enums/reservation-status.enum.js';
 import type { ReservationEntity } from './reservation.entity.js';
 import { TypeOrmReservationRepository } from './typeorm-reservation.repository.js';
 
@@ -46,5 +47,29 @@ describe('TypeOrmReservationRepository.save', () => {
     const { repo } = repoRejecting(other);
 
     await expect(repo.save(reservation())).rejects.toBe(other);
+  });
+});
+
+describe('TypeOrmReservationRepository.save with loadedStatus', () => {
+  it('guards the update on the loaded status and rejects a stale write', async () => {
+    const rows = { update: vi.fn().mockResolvedValue({ affected: 0 }) };
+    const repo = new TypeOrmReservationRepository(
+      rows as unknown as Repository<ReservationEntity>,
+    );
+    const r = reservation();
+    r.cancel();
+
+    const err = await repo
+      .save(r, ReservationStatus.PENDING_PAYMENT)
+      .catch((e: unknown) => e);
+
+    expect(err).toMatchObject({
+      kind: 'conflict',
+      code: 'RESERVATION_STATUS_CONFLICT',
+    });
+    expect(rows.update).toHaveBeenCalledWith(
+      { id: 'r1', status: ReservationStatus.PENDING_PAYMENT },
+      expect.objectContaining({ status: ReservationStatus.CANCELLED }),
+    );
   });
 });

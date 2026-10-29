@@ -1,9 +1,11 @@
+import type { ReservationStatus } from './enums/reservation-status.enum.js';
 import type { Reservation } from './reservation.js';
 import type { TimeSlot } from './time-slot.js';
 
 export interface ReservationRepository {
   get(id: string): Promise<Reservation | undefined>;
-  save(r: Reservation): Promise<void>;
+  // loadedStatus set on updates: a write over a concurrent transition fails.
+  save(r: Reservation, loadedStatus?: ReservationStatus): Promise<void>;
   list(): Promise<Reservation[]>;
   findOverlapping(
     roomId: string,

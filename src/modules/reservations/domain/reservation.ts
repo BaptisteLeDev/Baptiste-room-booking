@@ -1,6 +1,9 @@
 import { DomainError } from '../../../common/domain-error.js';
 import { ReservationStatus } from './enums/reservation-status.enum.js';
-import { InvalidStateTransitionException } from './exceptions/invalid-state-transition.exception.js';
+import {
+  InvalidStateTransitionException,
+  statusConflict,
+} from './exceptions/invalid-state-transition.exception.js';
 import { TimeSlot } from './time-slot.js';
 
 const TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
@@ -166,11 +169,7 @@ export class Reservation {
       this.s.status !== ReservationStatus.PENDING_PAYMENT &&
       this.s.status !== ReservationStatus.CONFIRMED
     ) {
-      throw new DomainError(
-        'conflict',
-        'RESERVATION_STATUS_CONFLICT',
-        'Statut de la réservation incompatible.',
-      );
+      throw statusConflict();
     }
   }
 }

@@ -54,8 +54,9 @@ export class ReservationAccess {
     act: (r: Reservation) => void,
   ): Promise<ReservationSnapshot> {
     const r = await this.loadFor(id, userId, scope);
+    const loadedStatus = r.toSnapshot().status;
     act(r);
-    await this.repo.save(r);
+    await this.repo.save(r, loadedStatus);
     return r.toSnapshot();
   }
 }

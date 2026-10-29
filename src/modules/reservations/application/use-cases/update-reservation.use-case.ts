@@ -59,7 +59,7 @@ export class UpdateReservationUseCase {
       room,
     );
     if (slot) await assertFree(repo, r.roomId, slot, r.id);
-    await repo.save(r);
+    await repo.save(r, cur.status);
     return r.toSnapshot();
   }
 }

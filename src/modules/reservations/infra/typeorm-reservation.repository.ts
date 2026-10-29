@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { hasPgCode, PgCode } from '../../../common/database/pg-error.js';
 import { DomainError } from '../../../common/domain-error.js';
+import type { ReservationStatus } from '../domain/enums/reservation-status.enum.js';
+import { statusConflict } from '../domain/exceptions/invalid-state-transition.exception.js';
 import type { Reservation } from '../domain/reservation.js';
 import type { ReservationRepository } from '../domain/reservation-repository.js';
 import { TimeSlot } from '../domain/time-slot.js';
@@ -22,9 +24,21 @@ export class TypeOrmReservationRepository implements ReservationRepository {
     return row ? toReservation(row) : undefined;
   }
 
-  async save(r: Reservation): Promise<void> {
+  async save(r: Reservation, loadedStatus?: ReservationStatus): Promise<void> {
     try {
-      await this.rows.save(toEntity(r.toSnapshot()));
+      const e = toEntity(r.toSnapshot());
+      if (loadedStatus === undefined) {
+        await this.rows.save(e);
+      } else {
+        const { id, ...fields } = e;
+        const res = await this.rows.update(
+          { id, status: loadedStatus },
+          fields,
+        );
+        if (res.affected === 0) {
+          throw statusConflict();
+        }
+      }
     } catch (e) {
       if (hasPgCode(e, PgCode.EXCLUSION_VIOLATION)) {
         throw new DomainError(

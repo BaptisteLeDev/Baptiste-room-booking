@@ -12,3 +12,10 @@ export class InvalidStateTransitionException extends DomainError {
     this.name = 'InvalidStateTransitionException';
   }
 }
+
+export const statusConflict = () =>
+  new DomainError(
+    'conflict',
+    'RESERVATION_STATUS_CONFLICT',
+    'Statut de la réservation incompatible.',
+  );

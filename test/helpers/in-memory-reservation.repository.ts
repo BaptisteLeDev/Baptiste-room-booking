@@ -3,7 +3,9 @@ import {
   Reservation,
   type ReservationSnapshot,
 } from '../../src/modules/reservations/domain/reservation.js';
+import type { ReservationStatus } from '../../src/modules/reservations/domain/enums/reservation-status.enum.js';
 import type { TimeSlot } from '../../src/modules/reservations/domain/time-slot.js';
+import { statusConflict } from '../../src/modules/reservations/domain/exceptions/invalid-state-transition.exception.js';
 import type { ReservationRepository } from '../../src/modules/reservations/domain/reservation-repository.js';
 
 @Injectable()
@@ -15,7 +17,11 @@ export class InMemoryReservationRepository implements ReservationRepository {
     return s && Reservation.restore(s);
   }
 
-  async save(r: Reservation): Promise<void> {
+  async save(r: Reservation, loadedStatus?: ReservationStatus): Promise<void> {
+    const stored = this.rows.get(r.id);
+    if (loadedStatus !== undefined && stored?.status !== loadedStatus) {
+      throw statusConflict();
+    }
     this.rows.set(r.id, r.toSnapshot());
   }
 

@@ -248,4 +248,60 @@ describe('reservation use cases', () => {
       expect(ok.comment).toBe('c');
     });
   });
+
+  describe('stale write after a concurrent cancel', () => {
+    const cancelAfterLoad = (
+      repo: InMemoryReservationRepository,
+      id: string,
+    ) => {
+      const get = repo.get.bind(repo);
+      let fired = false;
+      repo.get = async (x) => {
+        const r = await get(x);
+        if (!fired && x === id) {
+          fired = true;
+          await cancel.execute(id, 'u1');
+        }
+        return r;
+      };
+    };
+    let cancel: CancelReservationUseCase;
+    let repo: InMemoryReservationRepository;
+    let access: ReservationAccess;
+    let id: string;
+
+    beforeEach(async () => {
+      repo = new InMemoryReservationRepository();
+      access = new ReservationAccess(repo, catalog, authorization as never);
+      cancel = new CancelReservationUseCase(access);
+      id = (
+        await new CreateReservationUseCase(repo, catalog).execute('u1', {
+          roomId: 'room1',
+          ...at('03', '09', '12'),
+        })
+      ).id;
+    });
+
+    it('update does not revive CANCELLED', async () => {
+      const update = new UpdateReservationUseCase(access, repo, catalog);
+      cancelAfterLoad(repo, id);
+
+      const e = await rejection<DomainError>(
+        update.execute(id, 'u1', { comment: 'late' }),
+      );
+
+      expect(e.code).toBe('RESERVATION_STATUS_CONFLICT');
+      expect((await repo.get(id))?.toSnapshot().status).toBe('CANCELLED');
+    });
+
+    it('confirm does not revive CANCELLED', async () => {
+      const confirm = new ConfirmReservationUseCase(access);
+      cancelAfterLoad(repo, id);
+
+      const e = await rejection<DomainError>(confirm.execute(id, 'owner'));
+
+      expect(e.code).toBe('RESERVATION_STATUS_CONFLICT');
+      expect((await repo.get(id))?.toSnapshot().status).toBe('CANCELLED');
+    });
+  });
 });
