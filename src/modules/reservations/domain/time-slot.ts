@@ -1,6 +1,6 @@
 import { DomainError } from '../../../common/domain-error.js';
 
-const HOUR_MS = 3_600_000;
+const MINUTE_MS = 60_000;
 
 export class TimeSlot {
   private constructor(
@@ -28,8 +28,8 @@ export class TimeSlot {
     );
   }
 
-  hours(): number {
-    return (this.endMs - this.startMs) / HOUR_MS;
+  minutes(): number {
+    return (this.endMs - this.startMs) / MINUTE_MS;
   }
 
   overlaps(o: TimeSlot): boolean {

@@ -34,7 +34,9 @@ export type ReservationSnapshot = {
   createdAt: string;
 };
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
+// Integer cents: float price*hours loses half-cent (19.99*2.5 -> 49.97).
+const amountFor = (pricePerHour: number, slot: TimeSlot): number =>
+  Math.round((Math.round(pricePerHour * 100) * slot.minutes()) / 60) / 100;
 
 const assertCapacity = (n: number | undefined, room: RoomTerms) => {
   if (n !== undefined && n > room.capacity) {
@@ -74,7 +76,7 @@ export class Reservation {
           numberOfParticipants: p.numberOfParticipants,
         }),
         ...(p.comment !== undefined && { comment: p.comment }),
-        totalAmount: round2(p.room.pricePerHour * p.slot.hours()),
+        totalAmount: amountFor(p.room.pricePerHour, p.slot),
         currency: p.currency,
         createdAt: p.now.toISOString(),
       },
@@ -140,7 +142,7 @@ export class Reservation {
     if (c.comment !== undefined) this.s.comment = c.comment;
     if (c.slot && slotChanged) {
       this._slot = c.slot;
-      this.s.totalAmount = round2(room.pricePerHour * c.slot.hours());
+      this.s.totalAmount = amountFor(room.pricePerHour, c.slot);
     }
   }
 

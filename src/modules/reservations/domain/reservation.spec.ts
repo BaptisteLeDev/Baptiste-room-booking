@@ -82,6 +82,32 @@ describe('Reservation', () => {
     expect(s.createdAt).toBe(now.toISOString());
   });
 
+  it('rounds half-cent totals half-up in cents', () => {
+    const r = Reservation.request({
+      id: 'r2',
+      roomId: 'room1',
+      userId: 'u1',
+      slot: TimeSlot.of('2026-11-02T09:00:00Z', '2026-11-02T11:30:00Z'),
+      room: { capacity: 20, pricePerHour: 19.99 },
+      currency: 'EUR',
+      now,
+    });
+    expect(r.toSnapshot().totalAmount).toBe(49.98);
+  });
+
+  it('rounds 1h45 at 33.33/h to 58.33', () => {
+    const r = Reservation.request({
+      id: 'r3',
+      roomId: 'room1',
+      userId: 'u1',
+      slot: TimeSlot.of('2026-11-02T09:00:00Z', '2026-11-02T10:45:00Z'),
+      room: { capacity: 20, pricePerHour: 33.33 },
+      currency: 'EUR',
+      now,
+    });
+    expect(r.toSnapshot().totalAmount).toBe(58.33);
+  });
+
   it('rejects participants over capacity', () => {
     const e = thrown(() => make({ numberOfParticipants: 21 }));
     expect(e.kind).toBe('invalid');

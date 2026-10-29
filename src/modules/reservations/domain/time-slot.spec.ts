@@ -6,8 +6,8 @@ const s = (a: string, b: string) =>
   TimeSlot.of(`2026-11-02T${a}:00:00Z`, `2026-11-02T${b}:00:00Z`);
 
 describe('TimeSlot', () => {
-  it('computes hours', () => {
-    expect(s('09', '12').hours()).toBe(3);
+  it('computes minutes', () => {
+    expect(s('09', '12').minutes()).toBe(180);
   });
 
   it('normalises bounds to ISO with milliseconds', () => {
