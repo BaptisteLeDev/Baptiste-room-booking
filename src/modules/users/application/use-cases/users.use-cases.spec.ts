@@ -25,6 +25,7 @@ const repo = (users: User[], taken: string[] = []): IUserRepository => ({
   findByEmail: async (email) => users.find((u) => u.email === email) ?? null,
   existsByEmail: async (email) => taken.includes(email),
   save: async (u) => u,
+  savePassword: async () => {},
   delete: async (id) => users.some((u) => u.id === id),
   findPage: async (f) => ({
     page: f.page,

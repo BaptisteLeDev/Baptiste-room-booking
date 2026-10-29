@@ -35,6 +35,9 @@ const repo = (users: User[]): IUserRepository & { saved: User[] } => {
       saved.push(u);
       return u;
     },
+    savePassword: async (u) => {
+      saved.push(u);
+    },
     delete: async () => true,
     findPage: async () => {
       throw new Error('unused');
