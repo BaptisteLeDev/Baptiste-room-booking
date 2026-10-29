@@ -18,7 +18,7 @@ import { toEntity, toRoom } from './room.mapper.js';
 // availability slot `a` is open and no active reservation overlaps it
 const SLOT_OPEN = `(a.available AND NOT EXISTS (
   SELECT 1 FROM reservations res
-  WHERE res.room_id = a.room_id AND res.status IN ('PENDING','CONFIRMED')
+  WHERE res.room_id = a.room_id AND res.status IN ('PENDING_PAYMENT','CONFIRMED')
     AND tstzrange(res.start_time, res.end_time) && tstzrange(a.start_time, a.end_time)
 ))`;
 

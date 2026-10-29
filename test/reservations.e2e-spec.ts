@@ -78,7 +78,7 @@ describe('Reservations routes (e2e)', () => {
   it('POST valid body -> 201 PENDING with computed amount, GET returns the same', async () => {
     const r = await create();
     expect(r).toMatchObject({
-      status: 'PENDING',
+      status: 'PENDING_PAYMENT',
       totalAmount: 135,
       currency: 'EUR',
       startAt: iso(1, 9),
@@ -267,7 +267,7 @@ describe('Reservations routes (e2e)', () => {
     expect(fetched.body).toMatchObject({ comment: 'Déplacé' });
   });
 
-  it('PATCH slot on CONFIRMED -> PENDING with recomputed amount, persisted', async () => {
+  it('PATCH slot on CONFIRMED -> 409 RESERVATION_STATUS_CONFLICT, unchanged', async () => {
     const r = await create();
     await http().post(`/api/reservations/${r.id}/confirm`).expect(200);
 
@@ -278,20 +278,14 @@ describe('Reservations routes (e2e)', () => {
     const res = await http()
       .patch(`/api/reservations/${r.id}`)
       .send(patch)
-      .expect(200);
-    expect(res.body).toMatchObject({
-      status: 'PENDING',
-      totalAmount: 90,
-      startAt: iso(1, 13),
-      endAt: iso(1, 15),
-    });
+      .expect(409);
+    expect(res.body).toMatchObject({ code: 'RESERVATION_STATUS_CONFLICT' });
 
     const fetched = await http().get(`/api/reservations/${r.id}`).expect(200);
     expect(fetched.body).toMatchObject({
-      status: 'PENDING',
-      totalAmount: 90,
-      startAt: iso(1, 13),
-      endAt: iso(1, 15),
+      status: 'CONFIRMED',
+      startAt: iso(1, 9),
+      endAt: iso(1, 12),
     });
   });
 
@@ -354,7 +348,7 @@ describe('Reservations routes (e2e)', () => {
       .post(`/api/reservations/${r.id}/reject`)
       .send(reject)
       .expect(200);
-    expect(res.body).toMatchObject({ status: 'REJECTED' });
+    expect(res.body).toMatchObject({ status: 'REFUSED' });
   });
 
   it('GET list filters by status and from/to', async () => {
@@ -365,7 +359,7 @@ describe('Reservations routes (e2e)', () => {
 
     const res = await http()
       .get('/api/reservations')
-      .query({ status: 'PENDING', from: '2026-12-01', to: '2026-12-01' })
+      .query({ status: 'PENDING_PAYMENT', from: '2026-12-01', to: '2026-12-01' })
       .expect(200);
     const items = (res.body as PaginatedReservations).items as Reservation[];
     expect(items.map((i) => i.id)).toEqual([pending.id]);
