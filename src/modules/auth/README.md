@@ -31,6 +31,8 @@ Pas de base propre. Ports dans `domain/` (`PASSWORD_HASHER`, `TOKEN_ISSUER`, `RE
 - Jeton émis avant le dernier changement de mot de passe (à la seconde près) : 401.
 - Rôle inconnu de la base ou insuffisant : 403.
 - `JWT_SECRET` obligatoire au démarrage.
+- `POST /auth/register`, `POST /auth/login`, `PATCH /auth/password` : 5 requêtes/min/IP, sinon 429.
+- Connexion avec e-mail inconnu : un `verify` factice est exécuté (même coût que mauvais mot de passe).
 - La liste des jetons révoqués est en mémoire : perdue au redémarrage, non partagée entre instances.
 
 ## ADR

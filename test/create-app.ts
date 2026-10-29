@@ -1,17 +1,33 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import { DataSource } from 'typeorm';
-import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
 import { setupApp } from '../src/setup-app.js';
 import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
 import { hashPassword } from '../src/modules/auth/infra/scrypt-password-hasher.js';
+import {
+  TOKEN_ISSUER,
+  type TokenIssuer,
+} from '../src/modules/auth/domain/token-issuer.js';
 
-export async function createTestApp(): Promise<INestApplication<App>> {
-  const moduleFixture = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
+// Throttling is off unless asked: every spec logs in many times from one IP.
+export async function createTestApp({ throttle = false } = {}): Promise<
+  INestApplication<App>
+> {
+  const builder = Test.createTestingModule({ imports: [AppModule] });
+  if (!throttle) {
+    builder.overrideProvider(ThrottlerStorage).useValue({
+      increment: async () => ({
+        totalHits: 0,
+        timeToExpire: 0,
+        isBlocked: false,
+        timeToBlockExpire: 0,
+      }),
+    });
+  }
+  const moduleFixture = await builder.compile();
 
   const app: INestApplication<App> = moduleFixture.createNestApplication();
   setupApp(app);
@@ -46,18 +62,17 @@ export async function loginAs(
   role = 'CLIENT',
 ): Promise<string> {
   // role always reset: fixture user is shared across spec files
-  await app
-    .get(DataSource)
-    .query('UPDATE users SET password_hash = $1, role = $2 WHERE email = $3', [
-      await hashPassword(TEST_PASSWORD),
-      role,
-      email,
-    ]);
-  const res = await request(app.getHttpServer())
-    .post('/api/auth/login')
-    .send({ email, password: TEST_PASSWORD })
-    .expect(200);
-  return (res.body as { accessToken: string }).accessToken;
+  const dataSource = app.get(DataSource);
+  await dataSource.query(
+    'UPDATE users SET password_hash = $1, role = $2 WHERE email = $3',
+    [await hashPassword(TEST_PASSWORD), role, email],
+  );
+  // signs directly: POST /auth/login is throttled and would run out mid-spec
+  const [{ id }] = await dataSource.query<{ id: string }[]>(
+    'SELECT id FROM users WHERE email = $1',
+    [email],
+  );
+  return (await app.get<TokenIssuer>(TOKEN_ISSUER).sign(id)).token;
 }
 
 export const fieldsOf = (body: unknown) =>
