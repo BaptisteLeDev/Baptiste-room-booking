@@ -1,7 +1,5 @@
-import type {
-  Reservation,
-  ReservationStatus,
-} from '../../../reservations/domain/reservation.js';
+import type { Reservation } from '../../../reservations/domain/reservation.js';
+import type { ReservationStatus } from '../../../../contract.js';
 
 export type AdminReservationFilter = {
   status?: ReservationStatus;

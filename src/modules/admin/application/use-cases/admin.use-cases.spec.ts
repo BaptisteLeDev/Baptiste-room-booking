@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DomainError } from '../../../../common/domain-error.js';
 import type { AuthorizationService } from '../../../auth/application/authorization.service.js';
 import { Reservation } from '../../../reservations/domain/reservation.js';
+import { ReservationStatus } from '../../../reservations/domain/enums/reservation-status.enum.js';
 import type { AdminQuery } from '../../domain/repositories/admin-query.port.js';
 import { ListAdminReservationsUseCase } from './list-admin-reservations.use-case.js';
 import { StatisticsUseCase } from './statistics.use-case.js';
@@ -21,7 +22,7 @@ const reservation = Reservation.restore({
   userId: 'u',
   startAt: '2026-01-01T10:00:00.000Z',
   endAt: '2026-01-01T11:00:00.000Z',
-  status: 'CONFIRMED',
+  status: ReservationStatus.CONFIRMED,
   totalAmount: 20,
   currency: 'EUR',
   createdAt: '2026-01-01T00:00:00.000Z',

@@ -52,7 +52,7 @@ export class TypeOrmReservationRepository implements ReservationRepository {
       .createQueryBuilder('res')
       .where('res.roomId = :roomId', { roomId })
       .andWhere('res.status IN (:...active)', {
-        active: ['PENDING', 'CONFIRMED'],
+        active: ['PENDING_PAYMENT', 'CONFIRMED'],
       })
       .andWhere('res.startTime < :endAt AND res.endTime > :startAt', {
         startAt: new Date(slot.startAt),

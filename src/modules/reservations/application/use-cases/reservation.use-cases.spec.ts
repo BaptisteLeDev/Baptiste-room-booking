@@ -65,7 +65,7 @@ describe('reservation use cases', () => {
 
   it('creates PENDING reservation', async () => {
     const r = await create('room1', '02', '09', '12');
-    expect(r.status).toBe('PENDING');
+    expect(r.status).toBe('PENDING_PAYMENT');
     expect(r.totalAmount).toBe(135);
     expect(r.currency).toBe('EUR');
     expect(await svc.getReservation(r.id, 'u1')).toEqual(r);
@@ -98,17 +98,13 @@ describe('reservation use cases', () => {
     await create('room1', '02', '09', '12');
   });
 
-  it('amend CONFIRMED onto another active slot -> 409, own slot OK', async () => {
+  it('amend CONFIRMED slot change, even free -> 409 status conflict', async () => {
     const a = await create('room1', '02', '09', '12');
     await svc.confirmReservation(a.id, 'owner');
-    await create('room1', '02', '13', '15');
     const e = await rejection<DomainError>(
-      svc.updateReservation(a.id, 'u1', at('02', '14', '16')),
+      svc.updateReservation(a.id, 'u1', at('02', '10', '11')),
     );
-    expect(e.code).toBe('SLOT_UNAVAILABLE');
-    const ok = await svc.updateReservation(a.id, 'u1', at('02', '10', '11'));
-    expect(ok.startAt).toBe('2026-11-02T10:00:00.000Z');
-    expect(ok.status).toBe('PENDING');
+    expect(e.code).toBe('RESERVATION_STATUS_CONFLICT');
   });
 
   it('amend own reservation shifted 15 min -> ok', async () => {

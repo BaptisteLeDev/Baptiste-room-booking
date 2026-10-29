@@ -130,7 +130,7 @@ describe('Object-level authorization (e2e, BOLA / IDOR)', () => {
       const res = await as(alice)
         .get(`/api/reservations/${reservationId}`)
         .expect(200);
-      expect(res.body).toMatchObject({ status: 'PENDING' });
+      expect(res.body).toMatchObject({ status: 'PENDING_PAYMENT' });
     });
 
     it('other client confirm and reject -> 404, status unchanged', async () => {
@@ -144,7 +144,7 @@ describe('Object-level authorization (e2e, BOLA / IDOR)', () => {
       const res = await as(alice)
         .get(`/api/reservations/${reservationId}`)
         .expect(200);
-      expect(res.body).toMatchObject({ status: 'PENDING' });
+      expect(res.body).toMatchObject({ status: 'PENDING_PAYMENT' });
     });
 
     it('owner client confirm -> 403 (client is not the room manager)', async () => {
