@@ -108,6 +108,22 @@ describe('Reservation', () => {
     expect(r.toSnapshot().totalAmount).toBe(58.33);
   });
 
+  it('rejects a slot starting before now', () => {
+    const e = thrown(() =>
+      Reservation.request({
+        id: 'r4',
+        roomId: 'room1',
+        userId: 'u1',
+        slot: TimeSlot.of('2026-09-30T09:00:00Z', '2026-09-30T10:00:00Z'),
+        room,
+        currency: 'EUR',
+        now,
+      }),
+    );
+    expect(e.kind).toBe('invalid');
+    expect(e.code).toBe('VALIDATION_ERROR');
+  });
+
   it('rejects participants over capacity', () => {
     const e = thrown(() => make({ numberOfParticipants: 21 }));
     expect(e.kind).toBe('invalid');
@@ -173,7 +189,7 @@ describe('Reservation', () => {
 
   it('amend comment on CONFIRMED stays CONFIRMED', () => {
     const r = confirmed();
-    r.amend({ comment: 'hi' }, room);
+    r.amend({ comment: 'hi' }, room, now);
     expect(r.toSnapshot().status).toBe(ReservationStatus.CONFIRMED);
     expect(r.toSnapshot().comment).toBe('hi');
   });
@@ -184,6 +200,7 @@ describe('Reservation', () => {
       r.amend(
         { slot: TimeSlot.of('2026-11-02T09:00:00Z', '2026-11-02T11:00:00Z') },
         room,
+        now,
       ),
     );
     expect(e).toBeInstanceOf(InvalidStateTransitionException);
@@ -196,22 +213,45 @@ describe('Reservation', () => {
     r.amend(
       { slot: TimeSlot.of('2026-11-02T09:00:00Z', '2026-11-02T11:00:00Z') },
       room,
+      now,
     );
     const s = r.toSnapshot();
     expect(s.status).toBe(ReservationStatus.PENDING_PAYMENT);
     expect(s.totalAmount).toBe(90);
   });
 
+  it('amend slot to a start before now -> invalid, unchanged', () => {
+    const r = make();
+    const e = thrown(() =>
+      r.amend(
+        { slot: TimeSlot.of('2026-09-30T09:00:00Z', '2026-09-30T10:00:00Z') },
+        room,
+        now,
+      ),
+    );
+    expect(e.kind).toBe('invalid');
+    expect(e.code).toBe('VALIDATION_ERROR');
+    expect(r.slot.startAt).toBe(slot.startAt);
+  });
+
+  it('amend comment on a reservation already started -> ok', () => {
+    const r = make();
+    r.amend({ comment: 'late' }, room, new Date('2026-11-02T10:00:00Z'));
+    expect(r.toSnapshot().comment).toBe('late');
+  });
+
   it('amend over capacity throws invalid', () => {
     expect(
-      thrown(() => make().amend({ numberOfParticipants: 21 }, room)).kind,
+      thrown(() => make().amend({ numberOfParticipants: 21 }, room, now)).kind,
     ).toBe('invalid');
   });
 
   it('amend on REFUSED throws conflict', () => {
     const r = make();
     r.reject();
-    expect(thrown(() => r.amend({ comment: 'x' }, room)).kind).toBe('conflict');
+    expect(thrown(() => r.amend({ comment: 'x' }, room, now)).kind).toBe(
+      'conflict',
+    );
   });
 
   it('snapshot round-trips', () => {
@@ -227,6 +267,7 @@ describe('Reservation', () => {
       r.amend(
         { slot: TimeSlot.of(r.slot.startAt, '2026-11-02T08:00:00Z') },
         room,
+        now,
       ),
     );
     expect(e.kind).toBe('invalid');

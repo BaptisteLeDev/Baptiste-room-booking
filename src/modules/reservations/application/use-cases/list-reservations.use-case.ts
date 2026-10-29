@@ -21,21 +21,12 @@ export class ListReservationsUseCase {
   ) {}
 
   async execute(userId: string, q: ReservationListQuery) {
-    const all = (await this.repo.list())
-      .map((r) => r.toSnapshot())
-      .filter(
-        (s) =>
-          s.userId === userId &&
-          (!q.status || s.status === q.status) &&
-          (!q.from || s.startAt.slice(0, 10) >= q.from) &&
-          (!q.to || s.startAt.slice(0, 10) <= q.to),
-      );
-    const start = (q.page - 1) * q.pageSize;
+    const { items, total } = await this.repo.search({ ...q, userId });
     return {
-      items: all.slice(start, start + q.pageSize),
+      items: items.map((r) => r.toSnapshot()),
       page: q.page,
       pageSize: q.pageSize,
-      total: all.length,
+      total,
     };
   }
 }

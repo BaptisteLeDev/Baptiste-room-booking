@@ -6,7 +6,10 @@ import {
 import type { ReservationStatus } from '../../src/modules/reservations/domain/enums/reservation-status.enum.js';
 import type { TimeSlot } from '../../src/modules/reservations/domain/time-slot.js';
 import { statusConflict } from '../../src/modules/reservations/domain/exceptions/invalid-state-transition.exception.js';
-import type { ReservationRepository } from '../../src/modules/reservations/domain/reservation-repository.js';
+import type {
+  ReservationFilter,
+  ReservationRepository,
+} from '../../src/modules/reservations/domain/reservation-repository.js';
 
 @Injectable()
 export class InMemoryReservationRepository implements ReservationRepository {
@@ -25,8 +28,23 @@ export class InMemoryReservationRepository implements ReservationRepository {
     this.rows.set(r.id, r.toSnapshot());
   }
 
-  async list(): Promise<Reservation[]> {
-    return [...this.rows.values()].map((s) => Reservation.restore(s));
+  async search(
+    f: ReservationFilter,
+  ): Promise<{ items: Reservation[]; total: number }> {
+    const matching = [...this.rows.values()].filter(
+      (s) =>
+        s.userId === f.userId &&
+        (!f.status || s.status === f.status) &&
+        (!f.from || s.startAt.slice(0, 10) >= f.from) &&
+        (!f.to || s.startAt.slice(0, 10) <= f.to),
+    );
+    const start = (f.page - 1) * f.pageSize;
+    return {
+      items: matching
+        .slice(start, start + f.pageSize)
+        .map((s) => Reservation.restore(s)),
+      total: matching.length,
+    };
   }
 
   async findOverlapping(
@@ -34,13 +52,15 @@ export class InMemoryReservationRepository implements ReservationRepository {
     slot: TimeSlot,
     excludeId?: string,
   ): Promise<Reservation | undefined> {
-    return (await this.list()).find(
-      (o) =>
-        o.roomId === roomId &&
-        o.id !== excludeId &&
-        o.isActive &&
-        o.slot.overlaps(slot),
-    );
+    return [...this.rows.values()]
+      .map((s) => Reservation.restore(s))
+      .find(
+        (o) =>
+          o.roomId === roomId &&
+          o.id !== excludeId &&
+          o.isActive &&
+          o.slot.overlaps(slot),
+      );
   }
 
   async exclusive<T>(

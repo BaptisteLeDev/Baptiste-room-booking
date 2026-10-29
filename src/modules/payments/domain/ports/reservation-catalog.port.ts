@@ -3,6 +3,7 @@ export type PayableReservation = {
   userId: string;
   amount: number;
   currency: string;
+  status: string;
 };
 
 export interface ReservationCatalog {
