@@ -12,6 +12,8 @@ import {
 } from './common/http/api-exception.filter.js';
 import { validationDetails } from './common/validation/validation-details.js';
 
+const SANDBOX_CDN = 'apollo-server-landing-page.cdn.apollographql.com';
+
 export function setupApp(app: INestApplication): void {
   const proxy = process.env.TRUST_PROXY;
   if (proxy) {
@@ -20,7 +22,21 @@ export function setupApp(app: INestApplication): void {
       /^\d+$/.test(proxy) ? Number(proxy) : proxy,
     );
   }
-  app.use(helmet());
+  app.use(
+    process.env.NODE_ENV === 'production'
+      ? helmet()
+      : // Apollo Sandbox landing page loads from Apollo's CDN
+        helmet({
+          contentSecurityPolicy: {
+            directives: {
+              imgSrc: ["'self'", 'data:', SANDBOX_CDN],
+              scriptSrc: ["'self'", "https: 'unsafe-inline'"],
+              manifestSrc: ["'self'", SANDBOX_CDN],
+              frameSrc: ["'self'", 'sandbox.embed.apollographql.com'],
+            },
+          },
+        }),
+  );
   app.setGlobalPrefix('api');
   app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalPipes(

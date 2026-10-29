@@ -1,0 +1,19 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Query {
+  room(id: ID!): Room!
+}
+
+type Room {
+  capacity: Int!
+  description: String
+  equipment: [String!]!
+  id: ID!
+  imageUrl: String
+  location: String!
+  name: String!
+  pricePerHour: Float!
+  status: String!
+}

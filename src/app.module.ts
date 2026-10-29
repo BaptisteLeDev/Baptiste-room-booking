@@ -2,7 +2,12 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { createObserveModule } from '@nestjs/observe';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { join } from 'node:path';
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import { ApolloDriver, type ApolloDriverConfig } from '@nestjs/apollo';
+import { GraphQLModule } from '@nestjs/graphql';
+import { GqlThrottlerGuard } from './common/http/gql-throttler.guard.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { dataSourceOptions } from './database/data-source.js';
@@ -16,6 +21,8 @@ import { AdminModule } from './modules/admin/admin.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
+const dev = process.env.NODE_ENV !== 'production';
+
 @Module({
   imports: [
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
@@ -28,6 +35,15 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       serviceId: 'nest-app',
     }),
     TypeOrmModule.forRootAsync({ useFactory: () => dataSourceOptions }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      sortSchema: true,
+      context: ({ req, res }: { req: unknown; res: unknown }) => ({ req, res }),
+      playground: false,
+      introspection: dev,
+      plugins: dev ? [ApolloServerPluginLandingPageLocalDefault()] : [],
+    }),
     AuthModule,
     RoomsModule,
     ReservationsModule,
@@ -37,6 +53,6 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AdminModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [AppService, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })
 export class AppModule {}

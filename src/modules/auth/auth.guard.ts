@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { IS_PUBLIC } from './public.decorator.js';
+import { requestOf } from '../../common/http/request-of.js';
 import {
   REVOKED_TOKEN_STORE,
   type RevokedTokenStore,
@@ -36,7 +37,7 @@ export class AuthGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = requestOf<AuthenticatedRequest>(context);
     const header = request.headers.authorization;
     const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
     if (!token || this.revoked.isRevoked(token))
