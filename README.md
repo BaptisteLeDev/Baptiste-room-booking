@@ -69,6 +69,8 @@ The e2e global setup (`test/global-setup.ts`) runs migrations on the test DB `re
 
 JWT bearer. `JWT_SECRET` obligatoire, 32 caractères minimum (l'app refuse de démarrer sans). Jeton valable 1 h.
 
+Rate limit par IP. Derrière un reverse proxy, régler `TRUST_PROXY` (nombre de proxys, ex. `1`, ou valeur Express `trust proxy` comme `loopback`), sinon toutes les requêtes partagent l'IP du proxy. Ne jamais l'activer sans proxy : `X-Forwarded-For` deviendrait falsifiable.
+
 ```bash
 $ curl -X POST http://localhost:8080/api/auth/login \
     -H 'Content-Type: application/json' \
