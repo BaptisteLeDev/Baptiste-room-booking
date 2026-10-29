@@ -39,6 +39,25 @@ describe('TimeSlot', () => {
     expect(s('09', '11').overlaps(s('10', '12'))).toBe(true);
   });
 
+  it('identical slots overlap', () => {
+    expect(s('09', '10').overlaps(s('09', '10'))).toBe(true);
+  });
+
+  it('same start, different end overlap', () => {
+    expect(s('09', '10').overlaps(s('09', '12'))).toBe(true);
+    expect(s('09', '12').overlaps(s('09', '10'))).toBe(true);
+  });
+
+  it('same end, different start overlap', () => {
+    expect(s('09', '12').overlaps(s('10', '12'))).toBe(true);
+    expect(s('10', '12').overlaps(s('09', '12'))).toBe(true);
+  });
+
+  it('containment overlaps in both directions', () => {
+    expect(s('09', '12').overlaps(s('10', '11'))).toBe(true);
+    expect(s('10', '11').overlaps(s('09', '12'))).toBe(true);
+  });
+
   it('equals compares instants', () => {
     expect(s('09', '10').equals(s('09', '10'))).toBe(true);
     expect(s('09', '10').equals(s('09', '11'))).toBe(false);
