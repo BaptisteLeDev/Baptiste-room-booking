@@ -63,6 +63,7 @@ export class TypeOrmUserRepository implements IUserRepository {
     );
   }
 
+  // Only these columns: a full-row save would undo a concurrent role change.
   async savePassword(user: User): Promise<void> {
     await this.rows.update(user.id, {
       passwordHash: user.passwordHash,

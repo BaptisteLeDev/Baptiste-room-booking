@@ -39,7 +39,11 @@ function contextFor(
   return {
     getHandler: () => handler,
     getClass: () => class {},
-    switchToHttp: () => ({ getRequest: () => request }),
+    getType: () => 'http',
+    switchToHttp: () => ({
+      getRequest: () => request,
+      getResponse: () => ({}),
+    }),
   } as unknown as ExecutionContext;
 }
 

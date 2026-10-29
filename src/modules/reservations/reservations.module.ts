@@ -16,6 +16,8 @@ import { RoomRow } from './infra/room-row.entity.js';
 import { TypeOrmReservationRepository } from './infra/typeorm-reservation.repository.js';
 import { TypeOrmRoomCatalog } from './infra/typeorm-room-catalog.js';
 import { ReservationsController } from './reservations.controller.js';
+import { RoomReservationsLoader } from './graphql/room-reservations.loader.js';
+import { RoomReservationsResolver } from './graphql/room-reservations.resolver.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ReservationEntity, RoomRow]), AuthModule],
@@ -29,6 +31,8 @@ import { ReservationsController } from './reservations.controller.js';
     ListReservationsUseCase,
     RejectReservationUseCase,
     UpdateReservationUseCase,
+    RoomReservationsLoader,
+    RoomReservationsResolver,
     { provide: RESERVATION_REPOSITORY, useClass: TypeOrmReservationRepository },
     { provide: ROOM_CATALOG, useClass: TypeOrmRoomCatalog },
   ],

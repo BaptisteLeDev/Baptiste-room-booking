@@ -14,6 +14,7 @@ const repo = (rooms: Room[]): IRoomRepository => ({
   findAll: unused,
   delete: unused,
   findAvailability: unused,
+  findUpcomingAvailabilities: unused,
   replaceAvailability: unused,
 });
 

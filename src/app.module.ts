@@ -2,7 +2,12 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { createObserveModule } from '@nestjs/observe';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { join } from 'node:path';
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import { ApolloDriver, type ApolloDriverConfig } from '@nestjs/apollo';
+import { GraphQLModule } from '@nestjs/graphql';
+import { GqlThrottlerGuard } from './common/http/gql-throttler.guard.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { dataSourceOptions } from './database/data-source.js';
@@ -17,6 +22,9 @@ import { envOrDevFallback } from './common/env.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
+// opt-in: a deploy without NODE_ENV must not expose the schema
+const sandbox = process.env.GRAPHQL_SANDBOX === 'true';
+
 @Module({
   imports: [
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
@@ -29,6 +37,18 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       serviceId: 'nest-app',
     }),
     TypeOrmModule.forRootAsync({ useFactory: () => dataSourceOptions }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      sortSchema: true,
+      context: ({ req, res }: { req: unknown; res: unknown }) => ({ req, res }),
+      playground: false,
+      // field resolvers skip guards, but errors still need REST codes
+      fieldResolverEnhancers: ['filters'],
+      introspection: sandbox,
+      includeStacktraceInErrorResponses: false,
+      plugins: sandbox ? [ApolloServerPluginLandingPageLocalDefault()] : [],
+    }),
     AuthModule,
     RoomsModule,
     ReservationsModule,
@@ -38,6 +58,6 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AdminModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [AppService, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })
 export class AppModule {}

@@ -47,6 +47,18 @@ export class InMemoryReservationRepository implements ReservationRepository {
     };
   }
 
+  async findByRooms(
+    roomIds: readonly string[],
+    status?: ReservationStatus,
+  ): Promise<Reservation[]> {
+    return [...this.rows.values()]
+      .filter(
+        (s) => roomIds.includes(s.roomId) && (!status || s.status === status),
+      )
+      .sort((a, b) => a.startAt.localeCompare(b.startAt))
+      .map((s) => Reservation.restore(s));
+  }
+
   async findOverlapping(
     roomId: string,
     slot: TimeSlot,

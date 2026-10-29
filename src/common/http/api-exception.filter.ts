@@ -6,7 +6,9 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import type { GqlContextType } from '@nestjs/graphql';
 import type { Response } from 'express';
+import { GraphQLError } from 'graphql';
 import type { ApiError } from '../../contract.js';
 import { DomainError } from '../domain-error.js';
 
@@ -74,9 +76,15 @@ export function toApiError(exception: unknown): {
 
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost): void {
+  catch(exception: unknown, host: ArgumentsHost): GraphQLError | void {
     const { status, body } = toApiError(exception);
     if (status >= 500) Logger.error(exception, undefined, 'ApiExceptionFilter');
+    if (host.getType<GqlContextType>() === 'graphql') {
+      const { code, message, details } = body;
+      return new GraphQLError(message, {
+        extensions: { code, status, ...(details && { details }) },
+      });
+    }
     host.switchToHttp().getResponse<Response>().status(status).json(body);
   }
 }

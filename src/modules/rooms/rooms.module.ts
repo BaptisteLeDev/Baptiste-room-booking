@@ -13,6 +13,8 @@ import { AvailabilityEntity } from './infra/availability.entity.js';
 import { RoomEntity } from './infra/room.entity.js';
 import { TypeOrmRoomRepository } from './infra/typeorm-room.repository.js';
 import { RoomsController } from './rooms.controller.js';
+import { AvailabilityLoader } from './graphql/availability.loader.js';
+import { RoomsResolver } from './graphql/rooms.resolver.js';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { RoomsController } from './rooms.controller.js';
     DeleteRoomUseCase,
     GetRoomAvailabilityUseCase,
     SetRoomAvailabilityUseCase,
+    RoomsResolver,
+    AvailabilityLoader,
     { provide: ROOM_REPOSITORY, useClass: TypeOrmRoomRepository },
   ],
 })

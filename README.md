@@ -71,6 +71,8 @@ JWT bearer. `JWT_SECRET` obligatoire, 32 caractères minimum (l'app refuse de d�
 
 Rate limit par IP. Derrière un reverse proxy, régler `TRUST_PROXY` (nombre de proxys, ex. `1`, ou valeur Express `trust proxy` comme `loopback`), sinon toutes les requêtes partagent l'IP du proxy. Ne jamais l'activer sans proxy : `X-Forwarded-For` deviendrait falsifiable.
 
+Rate limit par IP. Derrière un reverse proxy, régler `TRUST_PROXY` (nombre de proxys, ex. `1`, ou valeur Express `trust proxy` comme `loopback`), sinon toutes les requêtes partagent l'IP du proxy. Ne jamais l'activer sans proxy : `X-Forwarded-For` deviendrait falsifiable.
+
 ```bash
 $ curl -X POST http://localhost:8080/api/auth/login \
     -H 'Content-Type: application/json' \
@@ -87,6 +89,30 @@ Routes publiques (sans jeton) :
 
 Tout le reste répond `401` sans jeton valide. `POST /api/auth/logout` révoque le jeton
 en mémoire : la liste est perdue au redémarrage et n'est pas partagée entre instances.
+
+## GraphQL
+
+Lecture seule, à côté de REST (voir `docs/decisions/0005-graphql-lecture.md`). Mettre `GRAPHQL_SANDBOX=true` dans `.env` (jamais en production : active l'introspection, Apollo Sandbox et assouplit la CSP), `pnpm start:dev`, puis ouvrir `http://localhost:8080/graphql`. Toute opération exige l'en-tête `Authorization: Bearer <accessToken>` (obtenu par `POST /api/auth/login`). Schéma : `src/schema.gql`, régénéré au démarrage.
+
+```graphql
+query GetManagerDashboard($roomId: ID!) {
+  room(id: $roomId) {
+    name
+    capacity
+    availabilities {
+      startAt
+      endAt
+    }
+    reservations(status: PENDING_PAYMENT) {
+      id
+      startAt
+      endAt
+      totalAmount
+      status
+    }
+  }
+}
+```
 
 ## Brancher le front
 

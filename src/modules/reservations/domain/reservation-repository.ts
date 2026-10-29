@@ -18,6 +18,10 @@ export interface ReservationRepository {
   search(
     filter: ReservationFilter,
   ): Promise<{ items: Reservation[]; total: number }>;
+  findByRooms(
+    roomIds: readonly string[],
+    status?: ReservationStatus,
+  ): Promise<Reservation[]>;
   findOverlapping(
     roomId: string,
     slot: TimeSlot,

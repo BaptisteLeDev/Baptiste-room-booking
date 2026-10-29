@@ -7,6 +7,7 @@ import { hasPgCode, PgCode } from '../../../common/database/pg-error.js';
 import { DomainError } from '../../../common/domain-error.js';
 import type { Room } from '../domain/entities/room.entity.js';
 import type {
+  AvailabilityPeriod,
   AvailabilityQuery,
   AvailabilitySlot,
   IRoomRepository,
@@ -32,6 +33,15 @@ WHERE a.room_id = $1
   AND (a.start_time AT TIME ZONE 'Europe/Paris')::date = $2::date
   AND ($3::time IS NULL OR (a.end_time AT TIME ZONE 'Europe/Paris')::time > $3::time)
   AND ($4::time IS NULL OR (a.start_time AT TIME ZONE 'Europe/Paris')::time < $4::time)
+ORDER BY a.start_time`;
+
+const UPCOMING_SQL = `
+SELECT a.room_id AS "roomId",
+       a.start_time AS "startAt",
+       a.end_time AS "endAt",
+       ${SLOT_OPEN} AS "available"
+FROM availabilities a
+WHERE a.room_id = ANY($1::uuid[]) AND a.end_time > now()
 ORDER BY a.start_time`;
 
 @Injectable()
@@ -66,6 +76,8 @@ export class TypeOrmRoomRepository implements IRoomRepository {
       qb.andWhere('r.capacity >= :cmin', { cmin: q.capacityMin });
     if (q.capacityMax !== undefined)
       qb.andWhere('r.capacity <= :cmax', { cmax: q.capacityMax });
+    if (q.priceMax !== undefined)
+      qb.andWhere('r.price_per_hour <= :pmax', { pmax: q.priceMax });
     if (q.date) {
       const availabilityFilters = [
         `a.room_id = r.id`,
@@ -134,6 +146,23 @@ export class TypeOrmRoomRepository implements IRoomRepository {
       q.startTime ?? null,
       q.endTime ?? null,
     ]);
+  }
+
+  async findUpcomingAvailabilities(
+    roomIds: readonly string[],
+  ): Promise<AvailabilityPeriod[][]> {
+    const rows = await this.dataSource.query<
+      (AvailabilityPeriod & { roomId: string })[]
+    >(UPCOMING_SQL, [roomIds]);
+    return roomIds.map((id) =>
+      rows
+        .filter((r) => r.roomId === id)
+        .map(({ startAt, endAt, available }) => ({
+          startAt,
+          endAt,
+          available,
+        })),
+    );
   }
 
   async replaceAvailability(

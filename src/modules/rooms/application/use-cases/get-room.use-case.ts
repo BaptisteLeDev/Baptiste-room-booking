@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Room as RoomDto } from '../../../../contract.js';
+import type { RoomSnapshot } from '../../domain/entities/room.entity.js';
 import {
   type IRoomRepository,
   ROOM_REPOSITORY,
@@ -12,7 +12,7 @@ export class GetRoomUseCase {
     @Inject(ROOM_REPOSITORY) private readonly rooms: IRoomRepository,
   ) {}
 
-  async execute(id: string): Promise<RoomDto> {
+  async execute(id: string): Promise<RoomSnapshot> {
     return orNotFound(await this.rooms.findById(id)).toSnapshot();
   }
 }

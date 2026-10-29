@@ -50,8 +50,13 @@ PostgreSQL, table `reservations`, via `TypeOrmReservationRepository` (`Reservati
 - Confirmer ou refuser : le gestionnaire propriétaire de la salle doit encore être gestionnaire (ou admin). Propriétaire redevenu `CLIENT` : 403.
 - Salle inconnue ou réservation inconnue : 404 `NOT_FOUND`.
 
+## GraphQL
+
+- `Room.reservations(status)` (`graphql/room-reservations.resolver.ts`) : propriétaire encore gestionnaire, ou admin ; sinon `null` + `FORBIDDEN`. Via `RoomReservationsLoader` -> `ReservationRepository.findByRooms` (une requête par statut demandé).
+
 ## ADR
 
 - [0001 - Verrouiller la ligne salle pour réserver](../../../docs/decisions/0001-lock-room-row-for-booking.md)
 - [0002 - Ports à jeton](../../../docs/decisions/0002-ports-a-jeton.md)
 - [0003 - Ports inter-contextes](../../../docs/decisions/0003-ports-inter-contextes.md)
+- [0005 - API GraphQL en lecture](../../../docs/decisions/0005-graphql-lecture.md)

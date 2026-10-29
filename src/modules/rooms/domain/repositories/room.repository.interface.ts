@@ -6,6 +6,13 @@ export type AvailabilitySlot = {
   available: boolean;
 };
 
+// instants, unlike AvailabilitySlot which is time-of-day for one date
+export type AvailabilityPeriod = {
+  startAt: Date;
+  endAt: Date;
+  available: boolean;
+};
+
 export type AvailabilityQuery = {
   date: string;
   startTime?: string;
@@ -19,6 +26,7 @@ export type RoomListFilter = {
   location?: string;
   capacityMin?: number;
   capacityMax?: number;
+  priceMax?: number;
   date?: string;
   startTime?: string;
   endTime?: string;
@@ -41,6 +49,9 @@ export interface IRoomRepository {
     roomId: string,
     query: AvailabilityQuery,
   ): Promise<AvailabilitySlot[]>;
+  findUpcomingAvailabilities(
+    roomIds: readonly string[],
+  ): Promise<AvailabilityPeriod[][]>;
   replaceAvailability(
     roomId: string,
     date: string,
