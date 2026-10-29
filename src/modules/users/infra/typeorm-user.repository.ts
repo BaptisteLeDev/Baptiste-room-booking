@@ -63,6 +63,13 @@ export class TypeOrmUserRepository implements IUserRepository {
     );
   }
 
+  async savePassword(user: User): Promise<void> {
+    await this.rows.update(user.id, {
+      passwordHash: user.passwordHash,
+      passwordChangedAt: user.passwordChangedAt ?? null,
+    });
+  }
+
   async delete(id: string): Promise<boolean> {
     const result = await this.rows.delete(id);
     return !!result.affected;

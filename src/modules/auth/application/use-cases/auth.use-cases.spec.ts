@@ -47,6 +47,9 @@ const repo = (users: User[]) => {
     replacePasswordHash: async (id, previous, next) => {
       replaced.push([id, previous, next]);
     },
+    savePassword: async (u) => {
+      saved.push(u);
+    },
     delete: async () => true,
     findPage: async () => {
       throw new Error('unused');

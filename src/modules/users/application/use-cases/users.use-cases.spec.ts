@@ -28,6 +28,7 @@ const repo = (users: User[], taken: string[] = []): IUserRepository => ({
   save: async (u) => u,
   updateProfile: async () => {},
   replacePasswordHash: async () => {},
+  savePassword: async () => {},
   delete: async (id) => users.some((u) => u.id === id),
   findPage: async (f) => ({
     page: f.page,

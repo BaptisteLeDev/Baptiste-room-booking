@@ -14,7 +14,9 @@ import { UserRow } from './user-row.entity.js';
 
 @Entity('reservations')
 @Check('"end_time" > "start_time"')
-@Check(`"status" IN ('PENDING_PAYMENT','CONFIRMED','REFUSED','CANCELLED','COMPLETED')`)
+@Check(
+  `"status" IN ('PENDING_PAYMENT','CONFIRMED','REFUSED','CANCELLED','COMPLETED')`,
+)
 @Exclusion(
   'no_overlap_active',
   `USING gist ("room_id" WITH =, tstzrange("start_time", "end_time") WITH &&) WHERE ("status" IN ('PENDING_PAYMENT', 'CONFIRMED'))`,

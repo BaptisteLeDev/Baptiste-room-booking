@@ -29,6 +29,6 @@ export class ChangePasswordUseCase {
       await this.hasher.hash(body.newPassword),
       new Date(),
     );
-    await this.users.save(user);
+    await this.users.savePassword(user);
   }
 }
