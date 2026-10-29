@@ -4,6 +4,7 @@
 
 type Query {
   room(id: ID!): Room!
+  searchRooms(filter: RoomSearchInput): [Room!]!
 }
 
 type Room {
@@ -16,4 +17,11 @@ type Room {
   name: String!
   pricePerHour: Float!
   status: String!
+}
+
+input RoomSearchInput {
+  maxPricePerHour: Float
+  minCapacity: Int
+  page: Int = 1
+  pageSize: Int = 20
 }

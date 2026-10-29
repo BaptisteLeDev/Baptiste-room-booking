@@ -88,4 +88,38 @@ describe('GraphQL read API (e2e)', () => {
       expect(body(res).errors?.[0].extensions.code).toBe('VALIDATION_ERROR');
     });
   });
+
+  describe('searchRooms(filter)', () => {
+    const SEARCH =
+      'query ($filter: RoomSearchInput) { searchRooms(filter: $filter) { name } }';
+
+    beforeEach(async () => {
+      for (const [capacity, pricePerHour] of [
+        [5, 20],
+        [12, 30],
+        [20, 80],
+      ])
+        await saveRoom({ name: `Salle ${capacity}`, capacity, pricePerHour });
+    });
+
+    it('searchRooms filters by capacity and price', async () => {
+      const res = await gql(app, token, SEARCH, {
+        filter: { minCapacity: 10, maxPricePerHour: 50 },
+      }).expect(200);
+      expect(body(res).errors).toBeUndefined();
+      expect(body(res).data?.searchRooms).toEqual([{ name: 'Salle 12' }]);
+    });
+
+    it('searchRooms without filter lists all', async () => {
+      const res = await gql(app, token, SEARCH).expect(200);
+      expect(body(res).data?.searchRooms).toHaveLength(3);
+    });
+
+    it('searchRooms rejects pageSize over 100', async () => {
+      const res = await gql(app, token, SEARCH, {
+        filter: { pageSize: 101 },
+      }).expect(200);
+      expect(body(res).errors?.[0].extensions.code).toBe('VALIDATION_ERROR');
+    });
+  });
 });

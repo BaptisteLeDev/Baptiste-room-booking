@@ -66,6 +66,8 @@ export class TypeOrmRoomRepository implements IRoomRepository {
       qb.andWhere('r.capacity >= :cmin', { cmin: q.capacityMin });
     if (q.capacityMax !== undefined)
       qb.andWhere('r.capacity <= :cmax', { cmax: q.capacityMax });
+    if (q.priceMax !== undefined)
+      qb.andWhere('r.price_per_hour <= :pmax', { pmax: q.priceMax });
     if (q.date) {
       const availabilityFilters = [
         `a.room_id = r.id`,

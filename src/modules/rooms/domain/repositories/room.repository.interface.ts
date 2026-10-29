@@ -19,6 +19,7 @@ export type RoomListFilter = {
   location?: string;
   capacityMin?: number;
   capacityMax?: number;
+  priceMax?: number;
   date?: string;
   startTime?: string;
   endTime?: string;
