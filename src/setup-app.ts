@@ -3,6 +3,7 @@ import {
   INestApplication,
   ValidationPipe,
 } from '@nestjs/common';
+import helmet from 'helmet';
 import {
   ApiExceptionFilter,
   MESSAGES,
@@ -11,6 +12,7 @@ import {
 import { validationDetails } from './common/validation/validation-details.js';
 
 export function setupApp(app: INestApplication): void {
+  app.use(helmet());
   app.setGlobalPrefix('api');
   app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalPipes(

@@ -1,5 +1,5 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DomainError } from '../../../../common/domain-error.js';
 import { User } from '../../../users/domain/entities/user.entity.js';
 import type { IUserRepository } from '../../../users/domain/repositories/user.repository.interface.js';
@@ -65,6 +65,19 @@ describe('auth use cases', () => {
         code: 'INVALID_CREDENTIALS',
       });
     }
+  });
+
+  it('login runs the hasher even when the email is unknown (no timing oracle)', async () => {
+    const verify = vi.fn(hasher.verify.bind(hasher));
+    const login = new LoginUseCase(
+      repo([ada()]),
+      { ...hasher, verify },
+      tokens,
+    );
+    await rejection(
+      login.execute({ email: 'nobody@example.com', password: 'secret' }),
+    );
+    expect(verify).toHaveBeenCalledTimes(1);
   });
 
   it('login returns token and snapshot without hash', async () => {

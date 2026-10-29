@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { AuthResponse, User } from '../../contract.js';
 import { CurrentToken, CurrentUserId } from './current-user.decorator.js';
 import { Public } from './public.decorator.js';
@@ -19,6 +20,9 @@ import { LogoutUseCase } from './application/use-cases/logout.use-case.js';
 import { MeUseCase } from './application/use-cases/me.use-case.js';
 import { RegisterUseCase } from './application/use-cases/register.use-case.js';
 
+// Per IP and route: brute-force and account-creation floods.
+const AUTH_THROTTLE = { default: { limit: 5, ttl: 60_000 } };
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -30,6 +34,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @Throttle(AUTH_THROTTLE)
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   register(@Body() body: RegisterDto): Promise<User> {
@@ -37,6 +42,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_THROTTLE)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   login(@Body() body: LoginDto): Promise<AuthResponse> {
@@ -55,6 +61,7 @@ export class AuthController {
   }
 
   @Patch('password')
+  @Throttle(AUTH_THROTTLE)
   @HttpCode(HttpStatus.NO_CONTENT)
   changePassword(
     @CurrentUserId() userId: string,
