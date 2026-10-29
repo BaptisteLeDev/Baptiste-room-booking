@@ -36,6 +36,15 @@ Couches : `domain/` (entité `Room` avec invariants, port `IRoomRepository`, tok
 - Modifier, supprimer une salle ou changer ses plages : le propriétaire doit encore être gestionnaire (ou admin). Propriétaire redevenu `CLIENT` : 403.
 - Filtres de disponibilité sur `GET /rooms` (`date`, `startTime`, `endTime`, `available`) appliqués seulement si `date` est fourni ; sans `date`, ils sont ignorés.
 
+## GraphQL
+
+Adaptateurs dans `graphql/` (lecture seule, voir ADR 0005) :
+
+- `room(id)` -> `GetRoomUseCase`.
+- `searchRooms(filter: RoomSearchInput)` -> `ListRoomsUseCase` (`minCapacity`, `maxPricePerHour`, pagination).
+- `Room.availabilities` : plages à venir (`end_time > now()`), via `AvailabilityLoader` -> `IRoomRepository.findUpcomingAvailabilities` (une requête pour toutes les salles).
+
 ## ADR
 
 - [0002 - Ports à jeton](../../../docs/decisions/0002-ports-a-jeton.md)
+- [0005 - API GraphQL en lecture](../../../docs/decisions/0005-graphql-lecture.md)

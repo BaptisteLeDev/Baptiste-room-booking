@@ -88,6 +88,30 @@ Routes publiques (sans jeton) :
 Tout le reste répond `401` sans jeton valide. `POST /api/auth/logout` révoque le jeton
 en mémoire : la liste est perdue au redémarrage et n'est pas partagée entre instances.
 
+## GraphQL
+
+Lecture seule, à côté de REST (voir `docs/decisions/0005-graphql-lecture.md`). `pnpm start:dev`, puis ouvrir `http://localhost:8080/graphql` (Apollo Sandbox, hors production). Toute opération exige l'en-tête `Authorization: Bearer <accessToken>` (obtenu par `POST /api/auth/login`). Schéma : `src/schema.gql`, régénéré au démarrage.
+
+```graphql
+query GetManagerDashboard($roomId: ID!) {
+  room(id: $roomId) {
+    name
+    capacity
+    availabilities {
+      startAt
+      endAt
+    }
+    reservations(status: PENDING_PAYMENT) {
+      id
+      startAt
+      endAt
+      totalAmount
+      status
+    }
+  }
+}
+```
+
 ## Brancher le front
 
 Dans `../frontend/apps/frontend/.env.local` :
