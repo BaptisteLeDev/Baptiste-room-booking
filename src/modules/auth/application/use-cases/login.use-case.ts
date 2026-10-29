@@ -35,7 +35,18 @@ export class LoginUseCase {
     if (!user || !valid) {
       throw invalidCredentials();
     }
-    const { token, expiresIn } = await this.tokens.sign(user.id);
+    // Conditional on the old hash: a concurrent password change wins.
+    if (this.hasher.needsRehash(user.passwordHash)) {
+      await this.users.replacePasswordHash(
+        user.id,
+        user.passwordHash,
+        await this.hasher.hash(body.password),
+      );
+    }
+    const { token, expiresIn } = await this.tokens.sign(
+      user.id,
+      user.tokenVersion,
+    );
     return { accessToken: token, expiresIn, user: user.toSnapshot() };
   }
 }

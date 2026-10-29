@@ -76,6 +76,14 @@ describe('RegisterDto', () => {
     const errors = await check(RegisterDto, { ...valid, password: '1234567' });
     expect(props(errors)).toContain('password');
   });
+
+  it('rejects password longer than 128', async () => {
+    const errors = await check(RegisterDto, {
+      ...valid,
+      password: 'a'.repeat(129),
+    });
+    expect(props(errors)).toContain('password');
+  });
 });
 
 describe('LoginDto', () => {
@@ -93,6 +101,14 @@ describe('LoginDto', () => {
   it('rejects malformed email', async () => {
     const errors = await check(LoginDto, { ...valid, email: 'nope' });
     expect(props(errors)).toContain('email');
+  });
+
+  it('rejects password longer than 128', async () => {
+    const errors = await check(LoginDto, {
+      ...valid,
+      password: 'a'.repeat(129),
+    });
+    expect(props(errors)).toContain('password');
   });
 });
 
@@ -124,4 +140,15 @@ describe('ChangePasswordDto', () => {
     });
     expect(props(errors)).toContain('newPassword');
   });
+
+  it.each(['currentPassword', 'newPassword'])(
+    'rejects %s longer than 128',
+    async (field) => {
+      const errors = await check(ChangePasswordDto, {
+        ...valid,
+        [field]: 'a'.repeat(129),
+      });
+      expect(props(errors)).toContain(field);
+    },
+  );
 });

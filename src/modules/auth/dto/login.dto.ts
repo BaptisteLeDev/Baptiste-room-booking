@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import type { LoginRequest } from '../../../contract.js';
 
 export class LoginDto implements LoginRequest {
@@ -8,5 +8,6 @@ export class LoginDto implements LoginRequest {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(128)
   password: string;
 }

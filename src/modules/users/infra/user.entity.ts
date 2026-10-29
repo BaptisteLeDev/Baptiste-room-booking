@@ -32,4 +32,7 @@ export class UserEntity {
 
   @Column({ type: 'timestamptz', name: 'password_changed_at', nullable: true })
   passwordChangedAt!: Date | null;
+
+  @Column({ type: 'integer', name: 'token_version', default: 0 })
+  tokenVersion!: number;
 }

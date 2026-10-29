@@ -19,6 +19,7 @@ export type NewUser = Omit<UserSnapshot, 'role'> & {
 export type UserState = UserSnapshot & {
   passwordHash: string;
   passwordChangedAt?: string;
+  tokenVersion: number;
 };
 
 export type ProfileChanges = Partial<
@@ -42,6 +43,7 @@ export class User {
       ...input,
       email: normalizeEmail(input.email),
       role: input.role ?? 'CLIENT',
+      tokenVersion: 0,
     });
   }
 
@@ -77,6 +79,10 @@ export class User {
     return this.state.passwordHash;
   }
 
+  get tokenVersion(): number {
+    return this.state.tokenVersion;
+  }
+
   get passwordChangedAt(): Date | undefined {
     return this.state.passwordChangedAt
       ? new Date(this.state.passwordChangedAt)
@@ -89,6 +95,7 @@ export class User {
       ...this.state,
       passwordHash,
       passwordChangedAt: truncated.toISOString(),
+      tokenVersion: this.state.tokenVersion + 1,
     };
   }
 
@@ -96,6 +103,7 @@ export class User {
     const {
       passwordHash: _hash,
       passwordChangedAt: _at,
+      tokenVersion: _version,
       ...snapshot
     } = this.state;
     return snapshot;

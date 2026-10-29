@@ -1,6 +1,6 @@
 export interface RevokedTokenStore {
-  revoke(token: string, expSeconds: number): void;
-  isRevoked(token: string): boolean;
+  revoke(jti: string, expSeconds: number): Promise<void>;
+  isRevoked(jti: string): Promise<boolean>;
 }
 
 export const REVOKED_TOKEN_STORE = Symbol('RevokedTokenStore');

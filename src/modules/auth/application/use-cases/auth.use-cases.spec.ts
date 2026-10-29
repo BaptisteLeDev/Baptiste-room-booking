@@ -5,7 +5,7 @@ import { User } from '../../../users/domain/entities/user.entity.js';
 import type { IUserRepository } from '../../../users/domain/repositories/user.repository.interface.js';
 import type { PasswordHasher } from '../../domain/password-hasher.js';
 import type { TokenIssuer } from '../../domain/token-issuer.js';
-import { InMemoryRevokedTokenStore } from '../../infra/in-memory-revoked-tokens.store.js';
+import { InMemoryRevokedTokens } from '../../fixtures/in-memory-revoked-tokens.js';
 import { AuthorizationService } from '../authorization.service.js';
 import { ChangePasswordUseCase } from './change-password.use-case.js';
 import { LoginUseCase } from './login.use-case.js';
@@ -20,14 +20,20 @@ const ada = (role: 'CLIENT' | 'ADMINISTRATEUR' = 'CLIENT') =>
     lastName: 'Lovelace',
     email: 'ada@example.com',
     passwordHash: 'h:secret',
+    tokenVersion: 0,
     role,
     createdAt: '2026-01-01T00:00:00.000Z',
   });
 
-const repo = (users: User[]): IUserRepository & { saved: User[] } => {
+const repo = (users: User[]) => {
   const saved: User[] = [];
-  return {
+  const replaced: [string, string, string][] = [];
+  const port: IUserRepository & {
+    saved: User[];
+    replaced: [string, string, string][];
+  } = {
     saved,
+    replaced,
     findById: async (id) => users.find((u) => u.id === id) ?? null,
     findByEmail: async (e) => users.find((u) => u.email === e) ?? null,
     existsByEmail: async (e) => users.some((u) => u.email === e),
@@ -35,21 +41,34 @@ const repo = (users: User[]): IUserRepository & { saved: User[] } => {
       saved.push(u);
       return u;
     },
+    updateProfile: async () => {
+      throw new Error('unused');
+    },
+    replacePasswordHash: async (id, previous, next) => {
+      replaced.push([id, previous, next]);
+    },
     delete: async () => true,
     findPage: async () => {
       throw new Error('unused');
     },
   };
+  return port;
 };
 
 const hasher: PasswordHasher = {
   hash: async (p) => `h:${p}`,
   verify: async (p, stored) => stored === `h:${p}`,
+  needsRehash: () => false,
 };
 
 const tokens: TokenIssuer = {
   sign: async (id) => ({ token: `t:${id}`, expiresIn: 3600 }),
-  verify: async (t) => ({ userId: t.slice(2), exp: 99, issuedAt: 0 }),
+  verify: async (t) => ({
+    userId: t.slice(2),
+    exp: 99,
+    jti: t,
+    tokenVersion: 0,
+  }),
 };
 
 describe('auth use cases', () => {
@@ -114,10 +133,29 @@ describe('auth use cases', () => {
     expect(users.saved[0].passwordHash).toBe('h:secret');
   });
 
-  it('logout revokes the token until exp', async () => {
-    const store = new InMemoryRevokedTokenStore();
+  it('login rehashes an outdated stored hash with the login password', async () => {
+    const users = repo([ada()]);
+    await new LoginUseCase(
+      users,
+      { ...hasher, needsRehash: () => true },
+      tokens,
+    ).execute({ email: 'ada@example.com', password: 'secret' });
+    expect(users.replaced).toEqual([['u1', 'h:secret', 'h:secret']]);
+  });
+
+  it('login does not rehash a current hash', async () => {
+    const users = repo([ada()]);
+    await new LoginUseCase(users, hasher, tokens).execute({
+      email: 'ada@example.com',
+      password: 'secret',
+    });
+    expect(users.replaced).toEqual([]);
+  });
+
+  it('logout revokes the token jti until exp', async () => {
+    const store = new InMemoryRevokedTokens();
     await new LogoutUseCase(tokens, store).execute('t:u1');
-    expect(store.isRevoked('t:u1')).toBe(true);
+    expect(await store.isRevoked('t:u1')).toBe(true);
   });
 
   it('logout maps an expired token to 401', async () => {
@@ -125,7 +163,7 @@ describe('auth use cases', () => {
       ...tokens,
       verify: () => Promise.reject(new Error('jwt expired')),
     };
-    const logout = new LogoutUseCase(expired, new InMemoryRevokedTokenStore());
+    const logout = new LogoutUseCase(expired, new InMemoryRevokedTokens());
     expect(await rejection(logout.execute('t:u1'))).toBeInstanceOf(
       UnauthorizedException,
     );
@@ -144,6 +182,15 @@ describe('auth use cases', () => {
       newPassword: 'fresh',
     });
     expect(users.saved[0].passwordHash).toBe('h:fresh');
+  });
+
+  it('change-password bumps the token version so older tokens die', async () => {
+    const users = repo([ada()]);
+    await new ChangePasswordUseCase(users, hasher).execute('u1', {
+      currentPassword: 'secret',
+      newPassword: 'fresh',
+    });
+    expect(users.saved[0].tokenVersion).toBe(1);
   });
 
   it('authorization: unknown user and CLIENT are forbidden', async () => {

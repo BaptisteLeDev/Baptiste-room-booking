@@ -40,6 +40,7 @@ export class UpdateUserUseCase {
       throw emailUsed();
     user.changeProfile(changes);
     if (changes.role !== undefined) user.changeRole(changes.role);
-    return (await this.users.save(user)).toSnapshot();
+    await this.users.updateProfile(user);
+    return user.toSnapshot();
   }
 }

@@ -1,8 +1,13 @@
 export type IssuedToken = { token: string; expiresIn: number };
-export type VerifiedToken = { userId: string; exp: number; issuedAt: number };
+export type VerifiedToken = {
+  userId: string;
+  exp: number;
+  jti: string;
+  tokenVersion: number;
+};
 
 export interface TokenIssuer {
-  sign(userId: string): Promise<IssuedToken>;
+  sign(userId: string, tokenVersion: number): Promise<IssuedToken>;
   /** Rejects when the token is invalid or expired. */
   verify(token: string): Promise<VerifiedToken>;
 }

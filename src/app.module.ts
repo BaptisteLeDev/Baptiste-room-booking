@@ -13,6 +13,7 @@ import { UsersModule } from './modules/users/users.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
+import { envOrDevFallback } from './common/env.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -23,8 +24,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com,
     // then run `npx @nestjs/observe link` to write your key pair into .env.
     ObserveModule.forRoot({
-      appKey: process.env.OBSERVE_APP_KEY ?? 'YOUR_APP_KEY',
-      appSecret: process.env.OBSERVE_APP_SECRET ?? 'YOUR_APP_SECRET',
+      appKey: envOrDevFallback('OBSERVE_APP_KEY', 'YOUR_APP_KEY'),
+      appSecret: envOrDevFallback('OBSERVE_APP_SECRET', 'YOUR_APP_SECRET'),
       serviceId: 'nest-app',
     }),
     TypeOrmModule.forRootAsync({ useFactory: () => dataSourceOptions }),

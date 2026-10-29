@@ -52,14 +52,14 @@ $ pnpm db:revert
 $ pnpm db:seed
 ```
 
-Seeded users log in with `SEED_PASSWORD` [`password123`]. `SEED_MOCK_DIR` [`../frontend/mock/data`] is resolved from the current directory. Active rooms get 14 days of availability slots from today.
+Seeded users log in with `SEED_PASSWORD` (required, no default). `SEED_MOCK_DIR` [`../frontend/mock/data`] is resolved from the current directory. Active rooms get 14 days of availability slots from today.
 
-Connection env vars, read by `src/database/data-source.ts` (defaults in brackets):
+Connection env vars, read by `src/database/data-source.ts` (defaults in brackets; `DB_USER` and `DB_PASSWORD` are required, dev values are in `docker-compose.yml`):
 
 - `DB_HOST` [`localhost`]
 - `DB_PORT` [`5432`]
-- `DB_USER` [`resa_user`]
-- `DB_PASSWORD` [`resa_password`]
+- `DB_USER` (required)
+- `DB_PASSWORD` (required)
 - `DB_NAME` [`resa_db`]
 - `DB_LOGGING` [`false`]: `true` logs SQL
 
@@ -67,7 +67,7 @@ The e2e global setup (`test/global-setup.ts`) runs migrations on the test DB `re
 
 ## Auth
 
-JWT bearer. `JWT_SECRET` obligatoire (l'app refuse de démarrer sans). Jeton valable 1 h.
+JWT bearer. `JWT_SECRET` obligatoire, 32 caractères minimum (l'app refuse de démarrer sans). Jeton valable 1 h.
 
 ```bash
 $ curl -X POST http://localhost:8080/api/auth/login \
@@ -156,7 +156,7 @@ This project is already instrumented. To connect it, run this and approve the co
 $ npx @nestjs/observe link
 ```
 
-It writes the app key and secret into `.env` and makes every `nest start` script (`start`, `start:dev`, `start:debug`) load it. In production, set `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` in the environment instead.
+It writes the app key and secret into `.env` and makes every `nest start` script (`start`, `start:dev`, `start:debug`) load it. In production, set `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` in the environment instead: the app refuses to start there without them.
 
 Or do it by hand: create an application and an API key at [observe.nestjs.com](https://observe.nestjs.com), and set the pair as `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` in the environment the app runs in.
 

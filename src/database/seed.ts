@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { In } from 'typeorm';
 import dataSource from './data-source.js';
+import { requiredEnv } from '../common/env.js';
 import { hashPassword } from '../modules/auth/infra/scrypt-password-hasher.js';
 import { UserEntity } from '../modules/users/infra/user.entity.js';
 import { RoomEntity } from '../modules/rooms/infra/room.entity.js';
@@ -10,7 +11,7 @@ import { ReservationEntity } from '../modules/reservations/infra/reservation.ent
 import { PaymentEntity } from '../modules/payments/infra/payment.entity.js';
 
 const MOCK_DIR = resolve(process.env.SEED_MOCK_DIR ?? '../frontend/mock/data');
-const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'password123';
+const SEED_PASSWORD = requiredEnv('SEED_PASSWORD');
 const AVAILABILITY_DAYS = 14;
 
 type Slot = { startTime: string; endTime: string; available: boolean };
