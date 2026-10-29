@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DomainError } from '../../../common/domain-error.js';
+import { ReservationStatus } from './enums/reservation-status.enum.js';
+import { InvalidStateTransitionException } from './exceptions/invalid-state-transition.exception.js';
 import { Reservation } from './reservation.js';
 import { TimeSlot } from './time-slot.js';
 
@@ -25,6 +27,44 @@ const confirmed = () => {
   return r;
 };
 
+const reach: Record<ReservationStatus, () => Reservation> = {
+  [ReservationStatus.PENDING_PAYMENT]: make,
+  [ReservationStatus.CONFIRMED]: confirmed,
+  [ReservationStatus.REFUSED]: () => {
+    const r = make();
+    r.reject();
+    return r;
+  },
+  [ReservationStatus.CANCELLED]: () => {
+    const r = make();
+    r.cancel();
+    return r;
+  },
+  [ReservationStatus.COMPLETED]: () => {
+    const r = confirmed();
+    r.complete();
+    return r;
+  },
+};
+
+const transitions: Record<
+  Exclude<ReservationStatus, ReservationStatus.PENDING_PAYMENT>,
+  (r: Reservation) => void
+> = {
+  [ReservationStatus.CONFIRMED]: (r) => r.confirm(),
+  [ReservationStatus.REFUSED]: (r) => r.reject(),
+  [ReservationStatus.CANCELLED]: (r) => r.cancel(),
+  [ReservationStatus.COMPLETED]: (r) => r.complete(),
+};
+
+const allowed: [ReservationStatus, ReservationStatus][] = [
+  [ReservationStatus.PENDING_PAYMENT, ReservationStatus.CONFIRMED],
+  [ReservationStatus.PENDING_PAYMENT, ReservationStatus.REFUSED],
+  [ReservationStatus.PENDING_PAYMENT, ReservationStatus.CANCELLED],
+  [ReservationStatus.CONFIRMED, ReservationStatus.CANCELLED],
+  [ReservationStatus.CONFIRMED, ReservationStatus.COMPLETED],
+];
+
 const thrown = (fn: () => void): DomainError => {
   try {
     fn();
@@ -35,9 +75,9 @@ const thrown = (fn: () => void): DomainError => {
 };
 
 describe('Reservation', () => {
-  it('request -> PENDING with computed amount', () => {
+  it('request -> PENDING_PAYMENT with computed amount', () => {
     const s = make().toSnapshot();
-    expect(s.status).toBe('PENDING');
+    expect(s.status).toBe(ReservationStatus.PENDING_PAYMENT);
     expect(s.totalAmount).toBe(135);
     expect(s.createdAt).toBe(now.toISOString());
   });
@@ -48,41 +88,91 @@ describe('Reservation', () => {
     expect(e.code).toBe('VALIDATION_ERROR');
   });
 
-  it('confirm PENDING -> CONFIRMED, twice -> conflict', () => {
-    const r = confirmed();
-    expect(r.toSnapshot().status).toBe('CONFIRMED');
-    const e = thrown(() => r.confirm());
+  it.each(
+    (Object.keys(transitions) as (keyof typeof transitions)[]).flatMap((to) =>
+      (Object.keys(reach) as ReservationStatus[]).map(
+        (from) => [from, to] as const,
+      ),
+    ),
+  )('transition %s -> %s is allowed only per spec', (from, to) => {
+    const r = reach[from]();
+    const isAllowed = allowed.some(([f, t]) => f === from && t === to);
+    if (isAllowed) {
+      transitions[to](r);
+      expect(r.toSnapshot().status).toBe(to);
+      return;
+    }
+    const e = thrown(() => transitions[to](r));
+    expect(e).toBeInstanceOf(InvalidStateTransitionException);
     expect(e.kind).toBe('conflict');
     expect(e.code).toBe('RESERVATION_STATUS_CONFLICT');
+    expect(r.toSnapshot().status).toBe(from);
   });
 
-  it('reject CONFIRMED throws conflict', () => {
-    expect(thrown(() => confirmed().reject()).kind).toBe('conflict');
+  it('final states accept no transition', () => {
+    for (const from of [
+      ReservationStatus.CANCELLED,
+      ReservationStatus.REFUSED,
+      ReservationStatus.COMPLETED,
+    ]) {
+      expect(
+        thrown(() => transitions[ReservationStatus.CANCELLED](reach[from]())),
+      ).toBeInstanceOf(InvalidStateTransitionException);
+    }
   });
 
-  it('cancel CONFIRMED -> CANCELLED, again throws', () => {
+  it('cannot cancel COMPLETED, cannot confirm REFUSED', () => {
+    expect(
+      thrown(() =>
+        transitions[ReservationStatus.CANCELLED](
+          reach[ReservationStatus.COMPLETED](),
+        ),
+      ),
+    ).toBeInstanceOf(InvalidStateTransitionException);
+    expect(
+      thrown(() =>
+        transitions[ReservationStatus.CONFIRMED](
+          reach[ReservationStatus.REFUSED](),
+        ),
+      ),
+    ).toBeInstanceOf(InvalidStateTransitionException);
+  });
+
+  it('cancel CONFIRMED -> CANCELLED, isActive false', () => {
     const r = confirmed();
     r.cancel();
-    expect(r.toSnapshot().status).toBe('CANCELLED');
+    expect(r.toSnapshot().status).toBe(ReservationStatus.CANCELLED);
     expect(r.isActive).toBe(false);
-    expect(thrown(() => r.cancel()).kind).toBe('conflict');
   });
 
   it('amend comment on CONFIRMED stays CONFIRMED', () => {
     const r = confirmed();
     r.amend({ comment: 'hi' }, room);
-    expect(r.toSnapshot().status).toBe('CONFIRMED');
+    expect(r.toSnapshot().status).toBe(ReservationStatus.CONFIRMED);
     expect(r.toSnapshot().comment).toBe('hi');
   });
 
-  it('amend slot on CONFIRMED -> PENDING, amount recomputed', () => {
+  it('amend slot on CONFIRMED -> InvalidStateTransitionException, unchanged', () => {
     const r = confirmed();
+    const e = thrown(() =>
+      r.amend(
+        { slot: TimeSlot.of('2026-11-02T09:00:00Z', '2026-11-02T11:00:00Z') },
+        room,
+      ),
+    );
+    expect(e).toBeInstanceOf(InvalidStateTransitionException);
+    expect(r.toSnapshot().status).toBe(ReservationStatus.CONFIRMED);
+    expect(r.toSnapshot().totalAmount).toBe(135);
+  });
+
+  it('amend slot on PENDING_PAYMENT keeps PENDING_PAYMENT, amount recomputed', () => {
+    const r = make();
     r.amend(
       { slot: TimeSlot.of('2026-11-02T09:00:00Z', '2026-11-02T11:00:00Z') },
       room,
     );
     const s = r.toSnapshot();
-    expect(s.status).toBe('PENDING');
+    expect(s.status).toBe(ReservationStatus.PENDING_PAYMENT);
     expect(s.totalAmount).toBe(90);
   });
 
@@ -92,7 +182,7 @@ describe('Reservation', () => {
     ).toBe('invalid');
   });
 
-  it('amend on REJECTED throws conflict', () => {
+  it('amend on REFUSED throws conflict', () => {
     const r = make();
     r.reject();
     expect(thrown(() => r.amend({ comment: 'x' }, room)).kind).toBe('conflict');

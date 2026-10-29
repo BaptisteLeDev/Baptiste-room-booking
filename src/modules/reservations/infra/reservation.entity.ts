@@ -14,10 +14,10 @@ import { UserRow } from './user-row.entity.js';
 
 @Entity('reservations')
 @Check('"end_time" > "start_time"')
-@Check(`"status" IN ('PENDING','CONFIRMED','REJECTED','CANCELLED','COMPLETED')`)
+@Check(`"status" IN ('PENDING_PAYMENT','CONFIRMED','REFUSED','CANCELLED','COMPLETED')`)
 @Exclusion(
   'no_overlap_active',
-  `USING gist ("room_id" WITH =, tstzrange("start_time", "end_time") WITH &&) WHERE ("status" IN ('PENDING', 'CONFIRMED'))`,
+  `USING gist ("room_id" WITH =, tstzrange("start_time", "end_time") WITH &&) WHERE ("status" IN ('PENDING_PAYMENT', 'CONFIRMED'))`,
 )
 export class ReservationEntity {
   @PrimaryColumn({ type: 'uuid' })
@@ -43,7 +43,7 @@ export class ReservationEntity {
   @Column({ type: 'timestamptz', name: 'end_time' })
   endTime!: Date;
 
-  @Column({ type: 'varchar', length: 10 })
+  @Column({ type: 'varchar', length: 20 })
   status!: string;
 
   @Column({ type: 'int', nullable: true, name: 'number_of_participants' })

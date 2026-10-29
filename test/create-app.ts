@@ -31,6 +31,11 @@ export async function resetDatabase(app: INestApplication<App>): Promise<void> {
     'TRUNCATE payments, reservations, availabilities, rooms RESTART IDENTITY CASCADE',
   );
   await dataSource.query('DELETE FROM users WHERE id <> $1', [userFixture.id]);
+  // a password change in one spec would otherwise reject fresh tokens in the next
+  await dataSource.query(
+    'UPDATE users SET password_changed_at = NULL WHERE id = $1',
+    [userFixture.id],
+  );
 }
 
 export const TEST_PASSWORD = 'password123';
@@ -54,3 +59,6 @@ export async function loginAs(
     .expect(200);
   return (res.body as { accessToken: string }).accessToken;
 }
+
+export const fieldsOf = (body: unknown) =>
+  (body as { details: { fields: Record<string, string[]> } }).details.fields;

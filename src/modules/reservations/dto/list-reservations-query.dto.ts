@@ -6,9 +6,9 @@ import { ValidateIfDefined } from '../../../common/validation/validate-if-define
 import type { ReservationStatus } from '../../../contract.js';
 
 const RESERVATION_STATUSES = enumValues<ReservationStatus>()([
-  'PENDING',
+  'PENDING_PAYMENT',
   'CONFIRMED',
-  'REJECTED',
+  'REFUSED',
   'CANCELLED',
   'COMPLETED',
 ]);

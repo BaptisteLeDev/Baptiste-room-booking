@@ -1,8 +1,22 @@
 import { DomainError } from '../../../common/domain-error.js';
+import { ReservationStatus } from './enums/reservation-status.enum.js';
+import { InvalidStateTransitionException } from './exceptions/invalid-state-transition.exception.js';
 import { TimeSlot } from './time-slot.js';
 
-export type ReservationStatus =
-  'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
+const TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
+  [ReservationStatus.PENDING_PAYMENT]: [
+    ReservationStatus.CONFIRMED,
+    ReservationStatus.REFUSED,
+    ReservationStatus.CANCELLED,
+  ],
+  [ReservationStatus.CONFIRMED]: [
+    ReservationStatus.CANCELLED,
+    ReservationStatus.COMPLETED,
+  ],
+  [ReservationStatus.CANCELLED]: [],
+  [ReservationStatus.REFUSED]: [],
+  [ReservationStatus.COMPLETED]: [],
+};
 
 export type RoomTerms = { capacity: number; pricePerHour: number };
 
@@ -55,7 +69,7 @@ export class Reservation {
         id: p.id,
         roomId: p.roomId,
         userId: p.userId,
-        status: 'PENDING',
+        status: ReservationStatus.PENDING_PAYMENT,
         ...(p.numberOfParticipants !== undefined && {
           numberOfParticipants: p.numberOfParticipants,
         }),
@@ -86,37 +100,47 @@ export class Reservation {
   }
 
   get isActive(): boolean {
-    return this.s.status === 'PENDING' || this.s.status === 'CONFIRMED';
+    return (
+      this.s.status === ReservationStatus.PENDING_PAYMENT ||
+      this.s.status === ReservationStatus.CONFIRMED
+    );
   }
 
   confirm(): void {
-    this.#assertStatus('PENDING');
-    this.s.status = 'CONFIRMED';
+    this.#transitionTo(ReservationStatus.CONFIRMED);
   }
 
   reject(): void {
-    this.#assertStatus('PENDING');
-    this.s.status = 'REJECTED';
+    this.#transitionTo(ReservationStatus.REFUSED);
   }
 
   cancel(): void {
-    this.#assertStatus('PENDING', 'CONFIRMED');
-    this.s.status = 'CANCELLED';
+    this.#transitionTo(ReservationStatus.CANCELLED);
+  }
+
+  complete(): void {
+    this.#transitionTo(ReservationStatus.COMPLETED);
   }
 
   amend(
     c: { slot?: TimeSlot; numberOfParticipants?: number; comment?: string },
     room: RoomTerms,
   ): void {
-    this.#assertStatus('PENDING', 'CONFIRMED');
+    this.#assertEditable();
     const participants = c.numberOfParticipants ?? this.s.numberOfParticipants;
     assertCapacity(participants, room);
+    const slotChanged = c.slot !== undefined && !c.slot.equals(this._slot);
+    if (slotChanged && this.s.status !== ReservationStatus.PENDING_PAYMENT) {
+      throw new InvalidStateTransitionException(
+        this.s.status,
+        ReservationStatus.PENDING_PAYMENT,
+      );
+    }
     if (participants !== undefined) this.s.numberOfParticipants = participants;
     if (c.comment !== undefined) this.s.comment = c.comment;
-    if (c.slot && !c.slot.equals(this._slot)) {
+    if (c.slot && slotChanged) {
       this._slot = c.slot;
       this.s.totalAmount = round2(room.pricePerHour * c.slot.hours());
-      this.s.status = 'PENDING';
     }
   }
 
@@ -128,8 +152,18 @@ export class Reservation {
     };
   }
 
-  #assertStatus(...allowed: ReservationStatus[]): void {
-    if (!allowed.includes(this.s.status)) {
+  #transitionTo(to: ReservationStatus): void {
+    if (!TRANSITIONS[this.s.status].includes(to)) {
+      throw new InvalidStateTransitionException(this.s.status, to);
+    }
+    this.s.status = to;
+  }
+
+  #assertEditable(): void {
+    if (
+      this.s.status !== ReservationStatus.PENDING_PAYMENT &&
+      this.s.status !== ReservationStatus.CONFIRMED
+    ) {
       throw new DomainError(
         'conflict',
         'RESERVATION_STATUS_CONFLICT',

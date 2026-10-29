@@ -116,15 +116,15 @@ describe('GetPaymentUseCase', () => {
     });
   });
 
-  it('rejects a non-owner non-admin with 403', async () => {
+  it('hides a non-owner non-admin payment as NOT_FOUND', async () => {
     const useCase = new GetPaymentUseCase(
       repo([payment]),
       catalog,
       auth(false),
     );
 
-    expect(await rejection(useCase.execute('other', 'pay1'))).toBeInstanceOf(
-      ForbiddenException,
-    );
+    expect(await rejection(useCase.execute('other', 'pay1'))).toMatchObject({
+      code: 'NOT_FOUND',
+    });
   });
 });
