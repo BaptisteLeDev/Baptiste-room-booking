@@ -34,8 +34,9 @@ mutation), code-first (`@nestjs/graphql` + Apollo).
 
 - REST reste l'API d'écriture et le contrat OpenAPI (`core/openapi.yml`).
 - Schéma `src/schema.gql` régénéré au démarrage, versionné.
-- Introspection et Apollo Sandbox coupés en production (CSP `helmet` assouplie
-  hors production seulement).
+- Introspection, Apollo Sandbox et CSP `helmet` assouplie seulement avec
+  `GRAPHQL_SANDBOX=true` (opt-in : un déploiement sans `NODE_ENV` reste fermé).
+  Jamais de stacktrace dans les erreurs.
 - Coût : le resolver de Réservations importe `RoomType` de `rooms/graphql`
   (code-first ne lie pas un champ à un type par son nom). Dépendance limitée à
   l'adaptateur, pas au domaine.

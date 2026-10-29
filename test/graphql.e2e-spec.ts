@@ -93,6 +93,14 @@ describe('GraphQL read API (e2e)', () => {
     });
   });
 
+  it('schema and stacktraces stay hidden unless GRAPHQL_SANDBOX is set', async () => {
+    const intro = await gql(app, token, '{ __schema { types { name } } }');
+    expect(body(intro).data?.__schema).toBeUndefined();
+    expect(body(intro).errors).toHaveLength(1);
+    const res = await gql(app, undefined, '{ searchRooms { name } }');
+    expect(body(res).errors?.[0].extensions).not.toHaveProperty('stacktrace');
+  });
+
   describe('searchRooms(filter)', () => {
     const SEARCH =
       'query ($filter: RoomSearchInput) { searchRooms(filter: $filter) { name } }';

@@ -90,7 +90,7 @@ en mémoire : la liste est perdue au redémarrage et n'est pas partagée entre i
 
 ## GraphQL
 
-Lecture seule, à côté de REST (voir `docs/decisions/0005-graphql-lecture.md`). `pnpm start:dev`, puis ouvrir `http://localhost:8080/graphql` (Apollo Sandbox, hors production). Toute opération exige l'en-tête `Authorization: Bearer <accessToken>` (obtenu par `POST /api/auth/login`). Schéma : `src/schema.gql`, régénéré au démarrage.
+Lecture seule, à côté de REST (voir `docs/decisions/0005-graphql-lecture.md`). Mettre `GRAPHQL_SANDBOX=true` dans `.env` (jamais en production : active l'introspection, Apollo Sandbox et assouplit la CSP), `pnpm start:dev`, puis ouvrir `http://localhost:8080/graphql`. Toute opération exige l'en-tête `Authorization: Bearer <accessToken>` (obtenu par `POST /api/auth/login`). Schéma : `src/schema.gql`, régénéré au démarrage.
 
 ```graphql
 query GetManagerDashboard($roomId: ID!) {

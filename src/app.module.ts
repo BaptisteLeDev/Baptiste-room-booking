@@ -21,7 +21,8 @@ import { AdminModule } from './modules/admin/admin.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
-const dev = process.env.NODE_ENV !== 'production';
+// opt-in: a deploy without NODE_ENV must not expose the schema
+const sandbox = process.env.GRAPHQL_SANDBOX === 'true';
 
 @Module({
   imports: [
@@ -43,8 +44,9 @@ const dev = process.env.NODE_ENV !== 'production';
       playground: false,
       // field resolvers skip guards, but errors still need REST codes
       fieldResolverEnhancers: ['filters'],
-      introspection: dev,
-      plugins: dev ? [ApolloServerPluginLandingPageLocalDefault()] : [],
+      introspection: sandbox,
+      includeStacktraceInErrorResponses: false,
+      plugins: sandbox ? [ApolloServerPluginLandingPageLocalDefault()] : [],
     }),
     AuthModule,
     RoomsModule,

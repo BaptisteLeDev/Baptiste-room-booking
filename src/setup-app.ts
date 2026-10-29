@@ -23,7 +23,7 @@ export function setupApp(app: INestApplication): void {
     );
   }
   app.use(
-    process.env.NODE_ENV === 'production'
+    process.env.GRAPHQL_SANDBOX !== 'true'
       ? helmet()
       : // Apollo Sandbox landing page loads from Apollo's CDN
         helmet({
