@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { paginate } from '../../../common/database/paginate.js';
 import { hasPgCode, PgCode } from '../../../common/database/pg-error.js';
 import { DomainError } from '../../../common/domain-error.js';
 import type { ReservationStatus } from '../domain/enums/reservation-status.enum.js';
 import { statusConflict } from '../domain/exceptions/invalid-state-transition.exception.js';
 import type { Reservation } from '../domain/reservation.js';
-import type { ReservationRepository } from '../domain/reservation-repository.js';
+import type {
+  ReservationFilter,
+  ReservationRepository,
+} from '../domain/reservation-repository.js';
 import { TimeSlot } from '../domain/time-slot.js';
 import { ReservationEntity } from './reservation.entity.js';
 import { toEntity, toReservation } from './reservation.mapper.js';
@@ -51,10 +55,28 @@ export class TypeOrmReservationRepository implements ReservationRepository {
     }
   }
 
-  // ponytail: full scan, push filters into SQL when volume grows
-  async list(): Promise<Reservation[]> {
-    const rows = await this.rows.find();
-    return rows.map(toReservation);
+  async search(
+    f: ReservationFilter,
+  ): Promise<{ items: Reservation[]; total: number }> {
+    const qb = this.rows
+      .createQueryBuilder('res')
+      .where('res.userId = :userId', { userId: f.userId })
+      .orderBy('res.startTime', 'ASC')
+      .addOrderBy('res.id', 'ASC');
+    if (f.status) qb.andWhere('res.status = :status', { status: f.status });
+    // Day bounds are UTC, as the list has always been (startAt is UTC ISO).
+    if (f.from)
+      qb.andWhere(
+        "CAST(res.startTime AT TIME ZONE 'UTC' AS date) >= CAST(:from AS date)",
+        { from: f.from },
+      );
+    if (f.to)
+      qb.andWhere(
+        "CAST(res.startTime AT TIME ZONE 'UTC' AS date) <= CAST(:to AS date)",
+        { to: f.to },
+      );
+    const { items, total } = await paginate(qb, f.page, f.pageSize);
+    return { items: items.map(toReservation), total };
   }
 
   async findOverlapping(

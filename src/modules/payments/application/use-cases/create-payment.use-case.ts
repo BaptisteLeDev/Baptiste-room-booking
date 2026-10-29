@@ -6,6 +6,7 @@ import type {
 } from '../../../../contract.js';
 import { orNotFound } from '../../../../common/not-found.js';
 import { Payment } from '../../domain/entities/payment.entity.js';
+import { assertPayable } from '../../domain/reservation-not-payable.js';
 import { paymentAlreadyExists } from '../../domain/payment-already-exists.js';
 import {
   PAYMENT_PROVIDER,
@@ -37,6 +38,7 @@ export class CreatePaymentUseCase {
       await this.catalog.findReservation(request.reservationId),
     );
     if (reservation.userId !== requesterId) throw new ForbiddenException();
+    assertPayable(reservation);
     if (await this.payments.existsForReservation(reservation.id))
       throw paymentAlreadyExists();
     const initiated = await this.provider.initiate(

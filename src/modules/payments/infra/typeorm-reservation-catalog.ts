@@ -11,9 +11,15 @@ export class TypeOrmReservationCatalog implements ReservationCatalog {
 
   async findReservation(id: string): Promise<PayableReservation | null> {
     const [row] = await this.dataSource.query<
-      { id: string; userId: string; amount: string; currency: string }[]
+      {
+        id: string;
+        userId: string;
+        amount: string;
+        currency: string;
+        status: string;
+      }[]
     >(
-      `SELECT id, user_id AS "userId", total_amount AS amount, currency
+      `SELECT id, user_id AS "userId", total_amount AS amount, currency, status
        FROM reservations WHERE id = $1`,
       [id],
     );

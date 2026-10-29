@@ -223,6 +223,19 @@ describe('Reservations routes (e2e)', () => {
       .expect(400);
   });
 
+  it('POST startAt in the past -> 400, nothing stored', async () => {
+    await http()
+      .post('/api/reservations')
+      .send(
+        payload({
+          startAt: '2020-01-01T09:00:00Z',
+          endAt: '2020-01-01T12:00:00Z',
+        }),
+      )
+      .expect(400);
+    expect(await countReservations()).toBe(0);
+  });
+
   it('POST roomId not a uuid -> 400', () => {
     return http()
       .post('/api/reservations')
@@ -267,6 +280,16 @@ describe('Reservations routes (e2e)', () => {
     expect(fetched.body).toMatchObject({ comment: 'Déplacé' });
   });
 
+  it('PATCH startAt in the past -> 400, row unchanged', async () => {
+    const r = await create();
+    await http()
+      .patch(`/api/reservations/${r.id}`)
+      .send({ startAt: '2020-01-01T09:00:00Z' })
+      .expect(400);
+    const fetched = await http().get(`/api/reservations/${r.id}`).expect(200);
+    expect(fetched.body).toMatchObject({ startAt: r.startAt, endAt: r.endAt });
+  });
+
   it('PATCH slot on CONFIRMED -> 409 RESERVATION_STATUS_CONFLICT, unchanged', async () => {
     const r = await create();
     await http().post(`/api/reservations/${r.id}/confirm`).expect(200);
@@ -306,6 +329,16 @@ describe('Reservations routes (e2e)', () => {
     expect(res.body).toMatchObject({ status: 'CANCELLED' });
 
     await create();
+  });
+
+  it('POST payment on CANCELLED reservation -> 409 RESERVATION_NOT_PAYABLE', async () => {
+    const r = await create();
+    await http().delete(`/api/reservations/${r.id}`).expect(204);
+    const res = await http()
+      .post('/api/payments')
+      .send({ reservationId: r.id, paymentMethod: 'CARD' })
+      .expect(409);
+    expect(res.body).toMatchObject({ code: 'RESERVATION_NOT_PAYABLE' });
   });
 
   it('POST /:id/confirm -> 200 CONFIRMED, twice -> 409', async () => {
@@ -359,10 +392,25 @@ describe('Reservations routes (e2e)', () => {
 
     const res = await http()
       .get('/api/reservations')
-      .query({ status: 'PENDING_PAYMENT', from: '2026-12-01', to: '2026-12-01' })
+      .query({
+        status: 'PENDING_PAYMENT',
+        from: '2026-12-01',
+        to: '2026-12-01',
+      })
       .expect(200);
     const items = (res.body as PaginatedReservations).items as Reservation[];
     expect(items.map((i) => i.id)).toEqual([pending.id]);
+  });
+
+  it('GET list paginates in SQL: total is the full count, page 2 is one row', async () => {
+    await create();
+    await create({ startAt: at(5, 9), endAt: at(5, 10) });
+    const res = await http()
+      .get('/api/reservations')
+      .query({ page: 2, pageSize: 1 })
+      .expect(200);
+    expect(res.body).toMatchObject({ page: 2, pageSize: 1, total: 2 });
+    expect((res.body as PaginatedReservations).items).toHaveLength(1);
   });
 
   it('GET list with unknown status -> 400', () => {

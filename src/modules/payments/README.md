@@ -25,6 +25,7 @@ PostgreSQL, table `payments`, via `TypeOrmPaymentRepository` (`PaymentEntity`, `
 
 - Montant fini et >= 0, devise sur 3 caractères : 400 `INVALID_PAYMENT`.
 - Statut limité à quatre valeurs (contrainte SQL `CHECK`).
+- Seules les réservations `PENDING_PAYMENT` et `CONFIRMED` sont payables : 409 `RESERVATION_NOT_PAYABLE`.
 - Une réservation a au plus un paiement : 409 `PAYMENT_ALREADY_EXISTS`.
 - Réservation inconnue : 404 `NOT_FOUND`. Seul son auteur peut la payer : 403 sinon.
 - `GET /payments/:id` d'un autre client : 404 `NOT_FOUND`, identique à un id inconnu (pas de fuite d'existence). Admin : accès.

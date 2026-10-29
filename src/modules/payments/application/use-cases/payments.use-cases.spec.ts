@@ -15,6 +15,7 @@ const reservation = {
   userId: 'owner',
   amount: 40,
   currency: 'EUR',
+  status: 'PENDING_PAYMENT',
 };
 
 const catalog: ReservationCatalog = {
@@ -68,6 +69,35 @@ describe('CreatePaymentUseCase', () => {
     expect(await rejection(useCase.execute('owner', request))).toMatchObject({
       code: 'PAYMENT_ALREADY_EXISTS',
     });
+  });
+
+  it.each(['CANCELLED', 'REFUSED', 'COMPLETED'])(
+    'rejects a %s reservation with RESERVATION_NOT_PAYABLE',
+    async (status) => {
+      const cancelled = { ...reservation, status };
+      const useCase = new CreatePaymentUseCase(
+        repo(),
+        { findReservation: async () => cancelled },
+        provider,
+      );
+
+      expect(await rejection(useCase.execute('owner', request))).toMatchObject({
+        kind: 'conflict',
+        code: 'RESERVATION_NOT_PAYABLE',
+      });
+    },
+  );
+
+  it('accepts a CONFIRMED reservation', async () => {
+    const useCase = new CreatePaymentUseCase(
+      repo(),
+      {
+        findReservation: async () => ({ ...reservation, status: 'CONFIRMED' }),
+      },
+      provider,
+    );
+
+    await expect(useCase.execute('owner', request)).resolves.toBeDefined();
   });
 
   it('rejects an unknown reservation with NOT_FOUND', async () => {

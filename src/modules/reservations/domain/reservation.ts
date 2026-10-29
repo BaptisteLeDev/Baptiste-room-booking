@@ -51,6 +51,13 @@ const assertCapacity = (n: number | undefined, room: RoomTerms) => {
   }
 };
 
+const slotInPast = () =>
+  new DomainError(
+    'invalid',
+    'VALIDATION_ERROR',
+    'Le créneau ne peut pas commencer dans le passé.',
+  );
+
 export class Reservation {
   private constructor(
     private readonly s: Omit<ReservationSnapshot, 'startAt' | 'endAt'>,
@@ -69,6 +76,7 @@ export class Reservation {
     now: Date;
   }): Reservation {
     assertCapacity(p.numberOfParticipants, p.room);
+    if (p.slot.startsBefore(p.now)) throw slotInPast();
     return new Reservation(
       {
         id: p.id,
@@ -130,6 +138,7 @@ export class Reservation {
   amend(
     c: { slot?: TimeSlot; numberOfParticipants?: number; comment?: string },
     room: RoomTerms,
+    now: Date,
   ): void {
     this.#assertEditable();
     const participants = c.numberOfParticipants ?? this.s.numberOfParticipants;
@@ -141,6 +150,7 @@ export class Reservation {
         ReservationStatus.PENDING_PAYMENT,
       );
     }
+    if (slotChanged && c.slot?.startsBefore(now)) throw slotInPast();
     if (participants !== undefined) this.s.numberOfParticipants = participants;
     if (c.comment !== undefined) this.s.comment = c.comment;
     if (c.slot && slotChanged) {

@@ -36,6 +36,10 @@ export class TimeSlot {
     return this.startMs < o.endMs && o.startMs < this.endMs;
   }
 
+  startsBefore(instant: Date): boolean {
+    return this.startMs < instant.getTime();
+  }
+
   equals(o: TimeSlot): boolean {
     return this.startMs === o.startMs && this.endMs === o.endMs;
   }

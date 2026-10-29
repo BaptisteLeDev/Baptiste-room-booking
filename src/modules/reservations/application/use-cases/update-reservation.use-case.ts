@@ -57,6 +57,7 @@ export class UpdateReservationUseCase {
         comment: req.comment,
       },
       room,
+      new Date(),
     );
     if (slot) await assertFree(repo, r.roomId, slot, r.id);
     await repo.save(r, cur.status);
