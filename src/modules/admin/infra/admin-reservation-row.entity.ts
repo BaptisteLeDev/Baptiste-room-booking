@@ -19,7 +19,7 @@ export class AdminReservationRow {
   @Column({ type: 'timestamptz', name: 'end_time' })
   endTime!: Date;
 
-  @Column({ type: 'varchar', length: 10 })
+  @Column({ type: 'varchar', length: 20 })
   status!: string;
 
   @Column({ type: 'int', nullable: true, name: 'number_of_participants' })
