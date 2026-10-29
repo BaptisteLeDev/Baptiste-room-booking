@@ -10,6 +10,7 @@ import type {
   RoomCreateRequest,
   User,
 } from '../src/contract.js';
+import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
 import { createTestApp, resetDatabase, loginAs } from './create-app.js';
 
 // BOLA / IDOR (OWASP API1): any authenticated user can send any object id.
@@ -163,6 +164,66 @@ describe('Object-level authorization (e2e, BOLA / IDOR)', () => {
   // OWASP API6: business flows must not be abusable by a second account.
   // Regression guard: a slot taken by Alice must stay taken for Bob, and only
   // Alice's own cancel frees it.
+  describe('demoted room owner', () => {
+    const demote = (role: 'CLIENT' | 'GESTIONNAIRE') =>
+      app
+        .get(DataSource)
+        .query('UPDATE users SET role = $1 WHERE id = $2', [
+          role,
+          userFixture.id,
+        ]);
+
+    beforeEach(async () => {
+      await demote('CLIENT');
+    });
+
+    it('demoted owner PATCH room -> 403, room unchanged', async () => {
+      await as(manager)
+        .patch(`/api/rooms/${roomId}`)
+        .send({ name: 'pwned' })
+        .expect(403);
+      const res = await as(manager).get(`/api/rooms/${roomId}`).expect(200);
+      expect(res.body).toMatchObject({ name: 'Salle Paris' });
+    });
+
+    it('demoted owner PUT availability -> 403, nothing stored', async () => {
+      await as(manager)
+        .put(`/api/rooms/${roomId}/availability`)
+        .send({
+          date: '2026-12-01',
+          slots: [{ startTime: '09:00', endTime: '12:00', available: true }],
+        })
+        .expect(403);
+      expect(await countRows('availabilities')).toBe(0);
+    });
+
+    it('demoted owner DELETE room -> 403, room still exists', async () => {
+      await as(manager).delete(`/api/rooms/${roomId}`).expect(403);
+      await as(manager).get(`/api/rooms/${roomId}`).expect(200);
+    });
+
+    it('demoted owner confirm and reject -> 403, status unchanged', async () => {
+      await as(manager)
+        .post(`/api/reservations/${reservationId}/confirm`)
+        .expect(403);
+      await as(manager)
+        .post(`/api/reservations/${reservationId}/reject`)
+        .send({})
+        .expect(403);
+      const res = await as(alice)
+        .get(`/api/reservations/${reservationId}`)
+        .expect(200);
+      expect(res.body).toMatchObject({ status: 'PENDING_PAYMENT' });
+    });
+
+    it('owner restored to GESTIONNAIRE can confirm (positive control)', async () => {
+      await demote('GESTIONNAIRE');
+      await as(manager)
+        .post(`/api/reservations/${reservationId}/confirm`)
+        .expect(200);
+    });
+  });
+
   describe('business flows (API6)', () => {
     const bookAlicesSlot = () =>
       as(bob)

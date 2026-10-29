@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
+import { MAX_PAGE } from '../../../common/database/paginate.js';
 import { check, props } from '../../../common/validation/dto-test-helpers.js';
 import type {
   AvailabilityUpdateRequest,
@@ -79,6 +80,21 @@ describe('CreateRoomDto', () => {
     const errors = await check(CreateRoomDto, { ...valid, equipment: [42] });
     expect(props(errors)).toContain('equipment');
   });
+  it.each([
+    ['name', 'a'.repeat(101)],
+    ['location', 'a'.repeat(256)],
+    ['imageUrl', `https://example.com/${'a'.repeat(2030)}`],
+  ])('rejects %s over the column length', async (field, value) => {
+    const errors = await check(CreateRoomDto, { ...valid, [field]: value });
+    expect(props(errors)).toContain(field);
+  });
+  it('accepts name of 100 characters (column boundary)', async () => {
+    const errors = await check(CreateRoomDto, {
+      ...valid,
+      name: 'a'.repeat(100),
+    });
+    expect(errors).toHaveLength(0);
+  });
   it.each(['description', 'equipment', 'imageUrl'])(
     'rejects null %s',
     async (field) => {
@@ -118,6 +134,15 @@ describe('UpdateRoomDto', () => {
   it('rejects equipment with non-string item', async () => {
     const errors = await check(UpdateRoomDto, { equipment: [42] });
     expect(props(errors)).toContain('equipment');
+  });
+
+  it.each([
+    ['name', 'a'.repeat(101)],
+    ['location', 'a'.repeat(256)],
+    ['imageUrl', `https://example.com/${'a'.repeat(2030)}`],
+  ])('rejects %s over the column length', async (field, value) => {
+    const errors = await check(UpdateRoomDto, { [field]: value });
+    expect(props(errors)).toContain(field);
   });
 
   it('rejects status outside RoomStatus enum', async () => {
@@ -244,6 +269,19 @@ describe('ListRoomsQueryDto', () => {
       capacityMax: 3,
     });
     expect(props(errors)).toContain('capacityMax');
+  });
+
+  it('rejects page whose offset would overflow int4', async () => {
+    const errors = await check(ListRoomsQueryDto, { page: 1e22 });
+    expect(props(errors)).toContain('page');
+  });
+
+  it('accepts the largest page for pageSize 100', async () => {
+    const errors = await check(ListRoomsQueryDto, {
+      page: MAX_PAGE,
+      pageSize: 100,
+    });
+    expect(errors).toHaveLength(0);
   });
 
   it('defaults page to 1 and pageSize to 20', () => {

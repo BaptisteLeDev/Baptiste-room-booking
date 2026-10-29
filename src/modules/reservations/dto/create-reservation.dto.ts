@@ -4,6 +4,7 @@ import {
   IsRFC3339,
   IsString,
   IsUUID,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { ValidateIfDefined } from '../../../common/validation/validate-if-defined.js';
@@ -29,5 +30,6 @@ export class CreateReservationDto implements ReservationCreateRequest {
 
   @ValidateIfDefined()
   @IsString()
+  @MaxLength(1000)
   comment?: string;
 }

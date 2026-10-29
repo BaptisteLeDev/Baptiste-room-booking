@@ -7,6 +7,7 @@ import {
   ROOM_REPOSITORY,
 } from '../../domain/repositories/room.repository.interface.js';
 import { orNotFound } from '../../../../common/not-found.js';
+import { assertRoomOwnerOrAdmin } from '../room-access.js';
 
 @Injectable()
 export class SetRoomAvailabilityUseCase {
@@ -21,7 +22,7 @@ export class SetRoomAvailabilityUseCase {
     body: AvailabilityUpdateRequest,
   ): Promise<AvailabilitySlot[]> {
     const room = orNotFound(await this.rooms.findById(roomId));
-    await this.authorization.assertOwnerOrAdmin(userId, room.ownerId);
+    await assertRoomOwnerOrAdmin(this.authorization, userId, room.ownerId);
     await this.rooms.replaceAvailability(roomId, body.date, body.slots);
     return this.rooms.findAvailability(roomId, { date: body.date });
   }

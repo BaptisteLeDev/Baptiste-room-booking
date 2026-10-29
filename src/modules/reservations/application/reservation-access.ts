@@ -38,10 +38,11 @@ export class ReservationAccess {
     const isClient = r.toSnapshot().userId === userId;
     if (isClient && scope !== 'manager') return r;
     const isOwner = (await this.catalog.ownerOf(r.roomId)) === userId;
-    if (
-      (isOwner && scope !== 'client') ||
-      (await this.authorization.isAdmin(userId))
-    ) {
+    const isManagerOwner =
+      isOwner &&
+      scope !== 'client' &&
+      (await this.authorization.role(userId)) !== 'CLIENT';
+    if (isManagerOwner || (await this.authorization.isAdmin(userId))) {
       return r;
     }
     throw isClient || isOwner ? new ForbiddenException() : notFound();

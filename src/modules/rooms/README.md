@@ -30,6 +30,10 @@ Couches : `domain/` (entité `Room` avec invariants, port `IRoomRepository`, tok
 - `replaceAvailability` (`PUT /rooms/:roomId/availability`) remplace les plages du jour donné. Les créneaux `available: false` sont stockés.
 - Supprimer une salle supprime ses plages (cascade). Une salle ayant des réservations ne peut pas être supprimée (409 `ROOM_HAS_RESERVATIONS`).
 - Salle inconnue : 404 `NOT_FOUND`.
+- Nom <= 100, lieu <= 255, URL d'image <= 2048 caractères (colonnes SQL) : 400 `VALIDATION_ERROR` au-delà.
+- Pagination : `page` <= 21 474 836 (`page` x `pageSize` tient dans un int4 de OFFSET) : 400 au-delà.
+- Recherche `search` et `location` : `%` et `_` saisis sont des caractères littéraux (LIKE échappé).
+- Modifier, supprimer une salle ou changer ses plages : le propriétaire doit encore être gestionnaire (ou admin). Propriétaire redevenu `CLIENT` : 403.
 - Filtres de disponibilité sur `GET /rooms` (`date`, `startTime`, `endTime`, `available`) appliqués seulement si `date` est fourni ; sans `date`, ils sont ignorés.
 
 ## ADR

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { paginate } from '../../../common/database/paginate.js';
+import { escapeLike } from '../../../common/database/escape-like.js';
 import { hasPgCode, PgCode } from '../../../common/database/pg-error.js';
 import { DomainError } from '../../../common/domain-error.js';
 import type { Room } from '../domain/entities/room.entity.js';
@@ -57,9 +58,10 @@ export class TypeOrmRoomRepository implements IRoomRepository {
       .addOrderBy('r.id');
     if (q.search)
       qb.andWhere('(r.name ILIKE :s OR r.description ILIKE :s)', {
-        s: `%${q.search}%`,
+        s: `%${escapeLike(q.search)}%`,
       });
-    if (q.location) qb.andWhere('r.location ILIKE :l', { l: q.location });
+    if (q.location)
+      qb.andWhere('r.location ILIKE :l', { l: escapeLike(q.location) });
     if (q.capacityMin !== undefined)
       qb.andWhere('r.capacity >= :cmin', { cmin: q.capacityMin });
     if (q.capacityMax !== undefined)

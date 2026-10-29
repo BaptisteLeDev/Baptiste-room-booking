@@ -46,6 +46,8 @@ PostgreSQL, table `reservations`, via `TypeOrmReservationRepository` (`Reservati
 - Une réservation active ne chevauche aucune autre réservation active de la même salle (409 `SLOT_UNAVAILABLE`), vérifié sous verrou de la ligne `rooms` (création et changement de créneau) ; la contrainte `no_overlap_active` reste le filet. La sienne propre n'est pas comptée lors d'une modification.
 - Modifier le créneau d'une réservation `CONFIRMED` est refusé (409 `RESERVATION_STATUS_CONFLICT`). Le créneau d'une `PENDING_PAYMENT` change sans changer de statut et recalcule le montant.
 - Seules `PENDING_PAYMENT` et `CONFIRMED` sont modifiables.
+- Commentaire <= 1000 caractères (400 `VALIDATION_ERROR`).
+- Confirmer ou refuser : le gestionnaire propriétaire de la salle doit encore être gestionnaire (ou admin). Propriétaire redevenu `CLIENT` : 403.
 - Salle inconnue ou réservation inconnue : 404 `NOT_FOUND`.
 
 ## ADR

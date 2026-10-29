@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, Max, Min } from 'class-validator';
+import { MAX_PAGE } from '../../../common/database/paginate.js';
 import { enumValues } from '../../../common/validation/enum-values.js';
 import { IsDateOnly } from '../../../common/validation/is-date-only.decorator.js';
 import { ValidateIfDefined } from '../../../common/validation/validate-if-defined.js';
@@ -30,6 +31,7 @@ export class ListReservationsQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(MAX_PAGE)
   page: number = 1;
 
   @ValidateIfDefined()
