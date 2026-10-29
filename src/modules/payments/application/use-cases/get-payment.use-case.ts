@@ -1,6 +1,6 @@
-import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Payment as PaymentDto } from '../../../../contract.js';
-import { orNotFound } from '../../../../common/not-found.js';
+import { notFound, orNotFound } from '../../../../common/not-found.js';
 import { AuthorizationService } from '../../../auth/application/authorization.service.js';
 import {
   RESERVATION_CATALOG,
@@ -29,7 +29,7 @@ export class GetPaymentUseCase {
       reservation.userId !== requesterId &&
       !(await this.authorization.isAdmin(requesterId))
     )
-      throw new ForbiddenException();
+      throw notFound();
     return toPaymentDto(payment);
   }
 }
