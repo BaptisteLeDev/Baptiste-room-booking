@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
+import { MAX_PAGE } from '../../../common/database/paginate.js';
 import { check, props } from '../../../common/validation/dto-test-helpers.js';
 import type {
   ReservationCreateRequest,
@@ -12,6 +13,21 @@ import { RejectReservationDto } from './reject-reservation.dto.js';
 import { UpdateReservationDto } from './update-reservation.dto.js';
 
 const ROOM_ID = '3f2c8a4e-9b1d-4e7a-8c5f-2a6b7d8e9f01';
+
+describe('ListReservationsQueryDto paging', () => {
+  it('rejects page whose offset would overflow int4', async () => {
+    const errors = await check(ListReservationsQueryDto, { page: 1e22 });
+    expect(props(errors)).toContain('page');
+  });
+
+  it('accepts the largest page for pageSize 100', async () => {
+    const errors = await check(ListReservationsQueryDto, {
+      page: MAX_PAGE,
+      pageSize: 100,
+    });
+    expect(errors).toHaveLength(0);
+  });
+});
 
 describe('CreateReservationDto', () => {
   const valid: ReservationCreateRequest = {
@@ -94,6 +110,13 @@ describe('CreateReservationDto', () => {
     expect(props(errors)).toContain('numberOfParticipants');
   });
 
+  it('rejects comment over 1000 characters', async () => {
+    const errors = await check(CreateReservationDto, {
+      ...valid,
+      comment: 'a'.repeat(1001),
+    });
+    expect(props(errors)).toContain('comment');
+  });
   it('rejects non-string comment', async () => {
     const errors = await check(CreateReservationDto, { ...valid, comment: 42 });
     expect(props(errors)).toContain('comment');
@@ -150,6 +173,13 @@ describe('UpdateReservationDto', () => {
     });
     expect(props(errors)).toContain('numberOfParticipants');
   });
+  it('rejects comment over 1000 characters', async () => {
+    const errors = await check(UpdateReservationDto, {
+      comment: 'a'.repeat(1001),
+    });
+    expect(props(errors)).toContain('comment');
+  });
+
   it.each(['startAt', 'endAt', 'numberOfParticipants', 'comment'])(
     'rejects null %s',
     async (field) => {

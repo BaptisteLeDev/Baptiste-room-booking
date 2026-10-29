@@ -7,6 +7,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { MAX_PAGE } from '../../../common/database/paginate.js';
 import { IsDateOnly } from '../../../common/validation/is-date-only.decorator.js';
 import { IsGreaterOrEqualTo } from '../../../common/validation/is-greater-or-equal-to.decorator.js';
 import { IsTimeOfDay } from '../../../common/validation/is-time-of-day.decorator.js';
@@ -61,6 +62,7 @@ export class ListRoomsQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(MAX_PAGE)
   page: number = 1;
 
   @ValidateIfDefined()

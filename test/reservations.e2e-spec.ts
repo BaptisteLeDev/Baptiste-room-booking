@@ -182,6 +182,14 @@ describe('Reservations routes (e2e)', () => {
     expect(res.filter((r) => r.status === 409)).toHaveLength(1);
   });
 
+  it('POST comment over 1000 chars -> 400, nothing stored', async () => {
+    await http()
+      .post('/api/reservations')
+      .send(payload({ comment: 'a'.repeat(1001) }))
+      .expect(400);
+    expect(await countReservations()).toBe(0);
+  });
+
   it('POST 21 participants -> 400, nothing stored', async () => {
     await http()
       .post('/api/reservations')

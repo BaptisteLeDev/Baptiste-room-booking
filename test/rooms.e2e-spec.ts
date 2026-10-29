@@ -340,6 +340,43 @@ describe('Rooms routes (e2e)', () => {
     return http().get('/api/rooms').query({ available: 'maybe' }).expect(400);
   });
 
+  it('POST /api/rooms with name over 100 chars -> 400', () => {
+    return http()
+      .post('/api/rooms')
+      .send(roomBody({ name: 'a'.repeat(101) }))
+      .expect(400);
+  });
+
+  it('GET /api/rooms with page 1e22 -> 400 (offset overflow)', () => {
+    return http().get('/api/rooms').query({ page: '1e22' }).expect(400);
+  });
+
+  it('GET /api/rooms search with % matches only the literal %', async () => {
+    await createRoom({ name: 'Salle 100% lumière' });
+    await createRoom({ name: 'Salle Paris' });
+
+    const res = await http()
+      .get('/api/rooms')
+      .query({ search: '%' })
+      .expect(200);
+    const page = json<PaginatedRooms>(res);
+    expect(page.total).toBe(1);
+    expect(page.items[0].name).toBe('Salle 100% lumière');
+  });
+
+  it('GET /api/rooms search with _ matches only the literal _', async () => {
+    await createRoom({ name: 'Salle A_B' });
+    await createRoom({ name: 'Salle AXB' });
+
+    const res = await http()
+      .get('/api/rooms')
+      .query({ search: '_' })
+      .expect(200);
+    expect(json<PaginatedRooms>(res).items.map((r) => r.name)).toEqual([
+      'Salle A_B',
+    ]);
+  });
+
   it('GET /api/rooms with pageSize above 100 -> 400', () => {
     return http().get('/api/rooms').query({ pageSize: 500 }).expect(400);
   });

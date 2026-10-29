@@ -5,6 +5,7 @@ import {
   ROOM_REPOSITORY,
 } from '../../domain/repositories/room.repository.interface.js';
 import { orNotFound } from '../../../../common/not-found.js';
+import { assertRoomOwnerOrAdmin } from '../room-access.js';
 
 @Injectable()
 export class DeleteRoomUseCase {
@@ -15,7 +16,7 @@ export class DeleteRoomUseCase {
 
   async execute(id: string, userId: string): Promise<void> {
     const room = orNotFound(await this.rooms.findById(id));
-    await this.authorization.assertOwnerOrAdmin(userId, room.ownerId);
+    await assertRoomOwnerOrAdmin(this.authorization, userId, room.ownerId);
     await this.rooms.delete(id);
   }
 }

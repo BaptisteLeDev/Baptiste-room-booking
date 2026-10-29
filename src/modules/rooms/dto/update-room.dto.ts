@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsString,
   IsUrl,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { enumValues } from '../../../common/validation/enum-values.js';
@@ -18,6 +19,7 @@ const ROOM_STATUSES = enumValues<RoomStatus>()(['ACTIVE', 'INACTIVE']);
 export class UpdateRoomDto implements RoomUpdateRequest {
   @ValidateIfDefined()
   @IsString()
+  @MaxLength(100)
   name?: string;
 
   @ValidateIfDefined()
@@ -31,6 +33,7 @@ export class UpdateRoomDto implements RoomUpdateRequest {
 
   @ValidateIfDefined()
   @IsString()
+  @MaxLength(255)
   location?: string;
 
   @ValidateIfDefined()
@@ -45,6 +48,7 @@ export class UpdateRoomDto implements RoomUpdateRequest {
 
   @ValidateIfDefined()
   @IsUrl()
+  @MaxLength(2048)
   imageUrl?: string;
 
   @ValidateIfDefined()

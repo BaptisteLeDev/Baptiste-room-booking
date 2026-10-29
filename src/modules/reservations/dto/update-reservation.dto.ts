@@ -1,4 +1,4 @@
-import { IsInt, IsRFC3339, IsString, Min } from 'class-validator';
+import { IsInt, IsRFC3339, IsString, MaxLength, Min } from 'class-validator';
 import { ValidateIfDefined } from '../../../common/validation/validate-if-defined.js';
 import { MinProperties } from '../../../common/validation/min-properties.js';
 import type { ReservationUpdateRequest } from '../../../contract.js';
@@ -20,5 +20,6 @@ export class UpdateReservationDto implements ReservationUpdateRequest {
 
   @ValidateIfDefined()
   @IsString()
+  @MaxLength(1000)
   comment?: string;
 }

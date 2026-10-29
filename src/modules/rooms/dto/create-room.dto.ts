@@ -6,6 +6,7 @@ import {
   IsString,
   IsUrl,
   Min,
+  MaxLength,
 } from 'class-validator';
 import { ValidateIfDefined } from '../../../common/validation/validate-if-defined.js';
 import type { RoomCreateRequest } from '../../../contract.js';
@@ -13,6 +14,7 @@ import type { RoomCreateRequest } from '../../../contract.js';
 export class CreateRoomDto implements RoomCreateRequest {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   name: string;
 
   @ValidateIfDefined()
@@ -25,6 +27,7 @@ export class CreateRoomDto implements RoomCreateRequest {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   location: string;
 
   @ValidateIfDefined()
@@ -38,5 +41,6 @@ export class CreateRoomDto implements RoomCreateRequest {
 
   @ValidateIfDefined()
   @IsUrl()
+  @MaxLength(2048)
   imageUrl?: string;
 }

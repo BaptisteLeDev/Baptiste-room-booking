@@ -22,7 +22,14 @@ const catalog: RoomCatalog = {
     id === 'room1' || id === 'room2' ? 'owner' : undefined,
 };
 
-const authorization = { isAdmin: async (id: string) => id === 'admin' };
+const roles: Record<string, string> = {
+  owner: 'GESTIONNAIRE',
+  admin: 'ADMINISTRATEUR',
+};
+const authorization = {
+  isAdmin: async (id: string) => id === 'admin',
+  role: async (id: string) => roles[id] ?? 'CLIENT',
+};
 
 const at = (day: string, a: string, b: string) => ({
   startAt: `2026-11-${day}T${a}:00:00Z`,
@@ -203,6 +210,28 @@ describe('reservation use cases', () => {
         svc.cancelReservation(r.id, 'owner'),
       );
       expect(e).toBeInstanceOf(ForbiddenException);
+      expect((await svc.getReservation(r.id, 'u1')).status).toBe(
+        'PENDING_PAYMENT',
+      );
+    });
+
+    it('demoted room owner (now CLIENT) confirm and reject -> 403', async () => {
+      const r = await create('room1', '07', '09', '10');
+      roles.owner = 'CLIENT';
+      try {
+        expect(
+          await rejection<ForbiddenException>(
+            svc.confirmReservation(r.id, 'owner'),
+          ),
+        ).toBeInstanceOf(ForbiddenException);
+        expect(
+          await rejection<ForbiddenException>(
+            svc.rejectReservation(r.id, 'owner'),
+          ),
+        ).toBeInstanceOf(ForbiddenException);
+      } finally {
+        roles.owner = 'GESTIONNAIRE';
+      }
       expect((await svc.getReservation(r.id, 'u1')).status).toBe(
         'PENDING_PAYMENT',
       );

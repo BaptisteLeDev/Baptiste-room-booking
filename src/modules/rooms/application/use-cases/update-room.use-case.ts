@@ -9,6 +9,7 @@ import {
   ROOM_REPOSITORY,
 } from '../../domain/repositories/room.repository.interface.js';
 import { orNotFound } from '../../../../common/not-found.js';
+import { assertRoomOwnerOrAdmin } from '../room-access.js';
 
 @Injectable()
 export class UpdateRoomUseCase {
@@ -23,7 +24,7 @@ export class UpdateRoomUseCase {
     body: RoomUpdateRequest,
   ): Promise<RoomDto> {
     const room = orNotFound(await this.rooms.findById(id));
-    await this.authorization.assertOwnerOrAdmin(userId, room.ownerId);
+    await assertRoomOwnerOrAdmin(this.authorization, userId, room.ownerId);
     room.update(body);
     return (await this.rooms.save(room)).toSnapshot();
   }
