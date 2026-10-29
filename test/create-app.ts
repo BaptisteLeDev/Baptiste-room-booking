@@ -54,3 +54,6 @@ export async function loginAs(
     .expect(200);
   return (res.body as { accessToken: string }).accessToken;
 }
+
+export const fieldsOf = (body: unknown) =>
+  (body as { details: { fields: Record<string, string[]> } }).details.fields;
