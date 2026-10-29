@@ -13,7 +13,7 @@ import {
 import { ROOM_CATALOG, type RoomCatalog } from '../domain/room-catalog.js';
 import type { TimeSlot } from '../domain/time-slot.js';
 
-type Scope = 'party' | 'manager';
+type Scope = 'client' | 'party' | 'manager';
 
 @Injectable()
 export class ReservationAccess {
@@ -25,8 +25,9 @@ export class ReservationAccess {
   ) {}
 
   /**
-   * party: booking client, room manager or admin. manager: room manager or
-   * admin. Strangers get 404 so ids do not leak; the client gets 403.
+   * client: booking client or admin. party: client, room manager or admin.
+   * manager: room manager or admin. Strangers get 404 so ids do not leak;
+   * a client or room manager refused by scope gets 403.
    */
   async loadFor(
     id: string,
@@ -35,14 +36,15 @@ export class ReservationAccess {
   ): Promise<Reservation> {
     const r = orNotFound(await this.repo.get(id));
     const isClient = r.toSnapshot().userId === userId;
-    if (isClient && scope === 'party') return r;
+    if (isClient && scope !== 'manager') return r;
+    const isOwner = (await this.catalog.ownerOf(r.roomId)) === userId;
     if (
-      (await this.catalog.ownerOf(r.roomId)) === userId ||
+      (isOwner && scope !== 'client') ||
       (await this.authorization.isAdmin(userId))
     ) {
       return r;
     }
-    throw isClient ? new ForbiddenException() : notFound();
+    throw isClient || isOwner ? new ForbiddenException() : notFound();
   }
 
   async transition(

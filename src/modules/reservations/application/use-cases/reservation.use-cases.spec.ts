@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { InMemoryReservationRepository } from '../../../../../test/helpers/in-memory-reservation.repository.js';
 import { DomainError } from '../../../../common/domain-error.js';
@@ -187,5 +188,64 @@ describe('reservation use cases', () => {
       (await rejection<DomainError>(svc.cancelReservation(r.id, 'u2'))).kind,
     ).toBe('not_found');
     expect((await svc.getReservation(r.id, 'u1')).comment).toBeUndefined();
+  });
+
+  describe('cancel and reject by role', () => {
+    it('client cancels own reservation -> ok', async () => {
+      const r = await create('room1', '07', '09', '10');
+      await svc.cancelReservation(r.id, 'u1');
+      expect((await svc.getReservation(r.id, 'u1')).status).toBe('CANCELLED');
+    });
+
+    it('room owner cancel -> 403, reservation unchanged', async () => {
+      const r = await create('room1', '07', '09', '10');
+      const e = await rejection<ForbiddenException>(
+        svc.cancelReservation(r.id, 'owner'),
+      );
+      expect(e).toBeInstanceOf(ForbiddenException);
+      expect((await svc.getReservation(r.id, 'u1')).status).toBe(
+        'PENDING_PAYMENT',
+      );
+    });
+
+    it('admin cancel -> ok', async () => {
+      const r = await create('room1', '07', '09', '10');
+      await svc.cancelReservation(r.id, 'admin');
+      expect((await svc.getReservation(r.id, 'u1')).status).toBe('CANCELLED');
+    });
+
+    it('stranger cancel -> not_found', async () => {
+      const r = await create('room1', '07', '09', '10');
+      expect(
+        (await rejection<DomainError>(svc.cancelReservation(r.id, 'u2'))).kind,
+      ).toBe('not_found');
+    });
+
+    it('room owner reject -> ok', async () => {
+      const r = await create('room1', '07', '09', '10');
+      const rejected = await svc.rejectReservation(r.id, 'owner');
+      expect(rejected.status).toBe('REFUSED');
+    });
+
+    it('room owner update -> 403, reservation unchanged', async () => {
+      const r = await create('room1', '07', '09', '10');
+      const e = await rejection<ForbiddenException>(
+        svc.updateReservation(r.id, 'owner', { comment: 'pwned' }),
+      );
+      expect(e).toBeInstanceOf(ForbiddenException);
+      expect((await svc.getReservation(r.id, 'u1')).comment).toBeUndefined();
+    });
+
+    it('client update own reservation -> ok', async () => {
+      const r = await create('room1', '07', '09', '10');
+      const ok = await svc.updateReservation(r.id, 'u1', { comment: 'c' });
+      expect(ok.comment).toBe('c');
+    });
+
+    it('admin update -> ok', async () => {
+      const r = await create('room1', '07', '09', '10');
+      const ok = await svc.updateReservation(r.id, 'admin', { comment: 'c' });
+      expect(ok.comment).toBe('c');
+    });
   });
 });

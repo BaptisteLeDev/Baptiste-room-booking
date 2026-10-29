@@ -28,7 +28,7 @@ export class UpdateReservationUseCase {
     userId: string,
     req: ReservationUpdateRequest,
   ): Promise<ReservationSnapshot> {
-    const r = await this.access.loadFor(id, userId, 'party');
+    const r = await this.access.loadFor(id, userId, 'client');
     const room = orNotFound(await this.catalog.find(r.roomId));
     const changesSlot = req.startAt !== undefined || req.endAt !== undefined;
     if (!changesSlot) return this.amend(this.repo, r, room, req);

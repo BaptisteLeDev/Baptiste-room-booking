@@ -6,6 +6,6 @@ export class CancelReservationUseCase {
   constructor(private readonly access: ReservationAccess) {}
 
   async execute(id: string, userId: string): Promise<void> {
-    await this.access.transition(id, userId, 'party', (r) => r.cancel());
+    await this.access.transition(id, userId, 'client', (r) => r.cancel());
   }
 }
