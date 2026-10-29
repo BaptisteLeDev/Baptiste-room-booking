@@ -5,6 +5,7 @@ import {
   props,
 } from '../../../common/validation/dto-test-helpers.js';
 import type { UserUpdateRequest } from '../../../contract.js';
+import { ListUsersQueryDto } from './list-users-query.dto.js';
 import { UpdateUserDto } from './update-user.dto.js';
 
 describe('UpdateUserDto', () => {
@@ -60,4 +61,11 @@ describe('UpdateUserDto', () => {
       expect(props(errors)).toContain(field);
     },
   );
+});
+
+describe('ListUsersQueryDto', () => {
+  it('rejects page whose offset would overflow int4', async () => {
+    const errors = await check(ListUsersQueryDto, { page: 1e22 });
+    expect(props(errors)).toContain('page');
+  });
 });

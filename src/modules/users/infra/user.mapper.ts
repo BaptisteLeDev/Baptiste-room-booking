@@ -15,6 +15,7 @@ export function toDomain(e: UserEntity): User {
     role: e.role as Role,
     createdAt: e.createdAt.toISOString(),
     passwordChangedAt: e.passwordChangedAt?.toISOString(),
+    tokenVersion: e.tokenVersion,
   });
 }
 
@@ -30,5 +31,6 @@ export function toEntity(s: UserState): UserEntity {
     passwordChangedAt: s.passwordChangedAt
       ? new Date(s.passwordChangedAt)
       : null,
+    tokenVersion: s.tokenVersion,
   });
 }

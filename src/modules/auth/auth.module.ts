@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersPersistenceModule } from '../users/users-persistence.module.js';
 import { AuthorizationService } from './application/authorization.service.js';
 import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case.js';
@@ -13,19 +14,18 @@ import { AuthGuard } from './auth.guard.js';
 import { PASSWORD_HASHER } from './domain/password-hasher.js';
 import { REVOKED_TOKEN_STORE } from './domain/revoked-token-store.js';
 import { TOKEN_ISSUER } from './domain/token-issuer.js';
-import { InMemoryRevokedTokenStore } from './infra/in-memory-revoked-tokens.store.js';
 import { JwtTokenIssuer } from './infra/jwt.token-issuer.js';
+import { RevokedTokenEntity } from './infra/revoked-token.entity.js';
 import { ScryptPasswordHasher } from './infra/scrypt-password-hasher.js';
+import { TypeOrmRevokedTokenStore } from './infra/typeorm-revoked-token.store.js';
+import { assertJwtSecret } from './jwt-secret.js';
 
 @Module({
   imports: [
     UsersPersistenceModule,
+    TypeOrmModule.forFeature([RevokedTokenEntity]),
     JwtModule.registerAsync({
-      useFactory: () => {
-        const secret = process.env.JWT_SECRET;
-        if (!secret) throw new Error('JWT_SECRET is required');
-        return { secret };
-      },
+      useFactory: () => ({ secret: assertJwtSecret(process.env.JWT_SECRET) }),
     }),
   ],
   controllers: [AuthController],
@@ -38,7 +38,7 @@ import { ScryptPasswordHasher } from './infra/scrypt-password-hasher.js';
     AuthorizationService,
     { provide: PASSWORD_HASHER, useClass: ScryptPasswordHasher },
     { provide: TOKEN_ISSUER, useClass: JwtTokenIssuer },
-    { provide: REVOKED_TOKEN_STORE, useClass: InMemoryRevokedTokenStore },
+    { provide: REVOKED_TOKEN_STORE, useClass: TypeOrmRevokedTokenStore },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
   exports: [AuthorizationService],

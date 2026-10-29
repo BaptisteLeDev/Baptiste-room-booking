@@ -26,5 +26,6 @@ export class RegisterDto implements RegisterRequest {
   @IsString()
   @IsNotEmpty()
   @MinLength(8)
+  @MaxLength(128)
   password: string;
 }

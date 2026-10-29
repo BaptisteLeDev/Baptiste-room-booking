@@ -3,6 +3,7 @@ import { User, type UserState } from './user.entity.js';
 
 const base: UserState = {
   passwordHash: 'hash',
+  tokenVersion: 0,
   id: 'u1',
   firstName: 'Ada',
   lastName: 'Lovelace',
@@ -47,6 +48,13 @@ describe('User', () => {
     );
     expect(user.toState().passwordChangedAt).toBe('2026-10-28T10:00:00.000Z');
     expect(user.toSnapshot()).not.toHaveProperty('passwordChangedAt');
+  });
+
+  it('changePasswordHash increments tokenVersion and toSnapshot hides it', () => {
+    const user = User.restore(base);
+    user.changePasswordHash('new', new Date('2026-10-28T10:00:00Z'));
+    expect(user.tokenVersion).toBe(1);
+    expect(user.toSnapshot()).not.toHaveProperty('tokenVersion');
   });
 
   it('toSnapshot returns a copy', () => {

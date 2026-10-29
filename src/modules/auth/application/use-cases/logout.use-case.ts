@@ -14,9 +14,9 @@ export class LogoutUseCase {
 
   async execute(token: string): Promise<void> {
     // Token may expire between AuthGuard and here: same 401 as the guard.
-    const { exp } = await this.tokens.verify(token).catch(() => {
+    const { exp, jti } = await this.tokens.verify(token).catch(() => {
       throw new UnauthorizedException();
     });
-    this.revoked.revoke(token, exp);
+    await this.revoked.revoke(jti, exp);
   }
 }

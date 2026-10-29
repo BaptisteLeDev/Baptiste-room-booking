@@ -16,6 +16,7 @@ const ada = () =>
     lastName: 'Lovelace',
     email: 'ada@example.com',
     passwordHash: 'hash',
+    tokenVersion: 0,
     role: 'CLIENT',
     createdAt: '2026-01-01T00:00:00.000Z',
   });
@@ -25,6 +26,8 @@ const repo = (users: User[], taken: string[] = []): IUserRepository => ({
   findByEmail: async (email) => users.find((u) => u.email === email) ?? null,
   existsByEmail: async (email) => taken.includes(email),
   save: async (u) => u,
+  updateProfile: async () => {},
+  replacePasswordHash: async () => {},
   delete: async (id) => users.some((u) => u.id === id),
   findPage: async (f) => ({
     page: f.page,
@@ -89,6 +92,17 @@ describe('users use cases', () => {
       authz(true),
     ).execute('admin', 'u1', { role: 'GESTIONNAIRE', email: ' New@X.io ' });
     expect(result).toMatchObject({ role: 'GESTIONNAIRE', email: 'new@x.io' });
+  });
+
+  it('update persists through updateProfile, never save (no lost password update)', async () => {
+    const updateProfile = vi.fn(async () => {});
+    const save = vi.fn(async (u: User) => u);
+    await new UpdateUserUseCase(
+      { ...repo([ada()]), updateProfile, save },
+      authz(true),
+    ).execute('admin', 'u1', { firstName: 'Grace' });
+    expect(updateProfile).toHaveBeenCalledTimes(1);
+    expect(save).not.toHaveBeenCalled();
   });
 
   it('update rejects an email already used', async () => {

@@ -25,6 +25,8 @@ PostgreSQL, table `users`, via `TypeOrmUserRepository` (`UserEntity`, mapper `us
 - Rôle limité à trois valeurs (contrainte SQL `CHECK`).
 - Utilisateur inconnu : 404 `NOT_FOUND`.
 - Non-admin qui modifie un autre compte ou son propre rôle : 403.
+- La mise à jour du profil (`updateProfile`) n'écrit que nom, e-mail et rôle : jamais le hash, `token_version` ni `password_changed_at`.
+- `replacePasswordHash` n'écrit que si le hash stocké est encore celui lu (rehash à la connexion).
 
 ## ADR
 

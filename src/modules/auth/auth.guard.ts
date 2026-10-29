@@ -12,7 +12,11 @@ import {
   REVOKED_TOKEN_STORE,
   type RevokedTokenStore,
 } from './domain/revoked-token-store.js';
-import { TOKEN_ISSUER, type TokenIssuer } from './domain/token-issuer.js';
+import {
+  TOKEN_ISSUER,
+  type TokenIssuer,
+  type VerifiedToken,
+} from './domain/token-issuer.js';
 import {
   type IUserRepository,
   USER_REPOSITORY,
@@ -39,25 +43,19 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const header = request.headers.authorization;
     const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
-    if (!token || this.revoked.isRevoked(token))
-      throw new UnauthorizedException();
+    if (!token) throw new UnauthorizedException();
 
-    let userId: string;
-    let issuedAt: number;
+    let verified: VerifiedToken;
     try {
-      ({ userId, issuedAt } = await this.tokens.verify(token));
+      verified = await this.tokens.verify(token);
     } catch {
       throw new UnauthorizedException();
     }
+    const { userId, jti, tokenVersion } = verified;
+    if (await this.revoked.isRevoked(jti)) throw new UnauthorizedException();
 
-    // ponytail: iat has 1s granularity, a token issued in the same second
-    // as the change still passes. Upgrade: store a token version claim.
     const user = await this.users.findById(userId);
-    const changedAt = user?.passwordChangedAt;
-    if (
-      !user ||
-      (changedAt && issuedAt < Math.floor(changedAt.getTime() / 1000))
-    )
+    if (!user || user.tokenVersion !== tokenVersion)
       throw new UnauthorizedException();
 
     request.userId = userId;

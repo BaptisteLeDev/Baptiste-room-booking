@@ -42,6 +42,27 @@ export class TypeOrmUserRepository implements IUserRepository {
     }
   }
 
+  async updateProfile(user: User): Promise<void> {
+    const { id, firstName, lastName, email, role } = user.toState();
+    try {
+      await this.rows.update(id, { firstName, lastName, email, role });
+    } catch (e) {
+      if (hasPgCode(e, PgCode.UNIQUE_VIOLATION)) throw emailUsed();
+      throw e;
+    }
+  }
+
+  async replacePasswordHash(
+    id: string,
+    previous: string,
+    next: string,
+  ): Promise<void> {
+    await this.rows.update(
+      { id, passwordHash: previous },
+      { passwordHash: next },
+    );
+  }
+
   async delete(id: string): Promise<boolean> {
     const result = await this.rows.delete(id);
     return !!result.affected;

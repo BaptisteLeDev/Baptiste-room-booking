@@ -49,12 +49,13 @@ export async function resetDatabase(app: INestApplication<App>): Promise<void> {
   await dataSource.query('DELETE FROM users WHERE id <> $1', [userFixture.id]);
   // a password change in one spec would otherwise reject fresh tokens in the next
   await dataSource.query(
-    'UPDATE users SET password_changed_at = NULL WHERE id = $1',
+    'UPDATE users SET password_changed_at = NULL, token_version = 0 WHERE id = $1',
     [userFixture.id],
   );
 }
 
 export const TEST_PASSWORD = 'password123';
+const FAST_SCRYPT = { N: 2 ** 10, r: 8, p: 1 };
 
 export async function loginAs(
   app: INestApplication<App>,
@@ -65,14 +66,14 @@ export async function loginAs(
   const dataSource = app.get(DataSource);
   await dataSource.query(
     'UPDATE users SET password_hash = $1, role = $2 WHERE email = $3',
-    [await hashPassword(TEST_PASSWORD), role, email],
+    [await hashPassword(TEST_PASSWORD, FAST_SCRYPT), role, email],
   );
   // signs directly: POST /auth/login is throttled and would run out mid-spec
-  const [{ id }] = await dataSource.query<{ id: string }[]>(
-    'SELECT id FROM users WHERE email = $1',
-    [email],
-  );
-  return (await app.get<TokenIssuer>(TOKEN_ISSUER).sign(id)).token;
+  const [{ id, token_version }] = await dataSource.query<
+    { id: string; token_version: number }[]
+  >('SELECT id, token_version FROM users WHERE email = $1', [email]);
+  return (await app.get<TokenIssuer>(TOKEN_ISSUER).sign(id, token_version))
+    .token;
 }
 
 export const fieldsOf = (body: unknown) =>

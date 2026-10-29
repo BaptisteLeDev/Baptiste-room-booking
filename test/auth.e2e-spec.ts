@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import { randomBytes, scryptSync } from 'node:crypto';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
@@ -180,10 +181,8 @@ describe('Auth routes (e2e)', () => {
       .expect(200);
   });
 
-  it('PATCH /api/auth/password -> old token 401 on /me, new login 200', async () => {
+  it('PATCH /api/auth/password -> old token 401 on /me in the same second', async () => {
     const oldToken = await loginAs(app);
-    // iat is whole seconds: wait so old token is strictly older
-    await new Promise((resolve) => setTimeout(resolve, 1100));
     await http()
       .patch('/api/auth/password')
       .set('Authorization', `Bearer ${oldToken}`)
@@ -206,6 +205,47 @@ describe('Auth routes (e2e)', () => {
       .get('/api/auth/me')
       .set('Authorization', `Bearer ${newToken}`)
       .expect(200);
+  });
+
+  it('POST /api/auth/login -> rehashes a legacy scrypt hash to the current params', async () => {
+    const salt = randomBytes(16);
+    const legacy = `scrypt$${salt.toString('hex')}$${scryptSync(TEST_PASSWORD, salt, 64).toString('hex')}`;
+    await app
+      .get(DataSource)
+      .query('UPDATE users SET password_hash = $1 WHERE email = $2', [
+        legacy,
+        userFixture.email,
+      ]);
+
+    await http()
+      .post('/api/auth/login')
+      .send({ email: userFixture.email, password: TEST_PASSWORD })
+      .expect(200);
+
+    const [{ password_hash }] = await app
+      .get(DataSource)
+      .query<{ password_hash: string }[]>(
+        'SELECT password_hash FROM users WHERE email = $1',
+        [userFixture.email],
+      );
+    expect(password_hash).toMatch(/^scrypt\$v2\$131072\$8\$1\$/);
+  });
+
+  it('POST /api/auth/logout -> purges expired revoked tokens', async () => {
+    const dataSource = app.get(DataSource);
+    await dataSource.query(
+      `INSERT INTO revoked_tokens (jti, expires_at) VALUES ('expired-jti', now() - interval '1 minute')`,
+    );
+    const token = await loginAs(app);
+    await http()
+      .post('/api/auth/logout')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(204);
+
+    const rows = await dataSource.query<{ jti: string }[]>(
+      `SELECT jti FROM revoked_tokens WHERE jti = 'expired-jti'`,
+    );
+    expect(rows).toEqual([]);
   });
 
   it('GET /api/rooms -> 200 without token (public)', () => {

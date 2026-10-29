@@ -8,6 +8,6 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.spec.ts'],
-    env: { JWT_SECRET: 'test-secret' },
+    env: { JWT_SECRET: 'test-secret-that-is-at-least-32-chars' },
   },
 });
