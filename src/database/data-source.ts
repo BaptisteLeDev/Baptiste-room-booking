@@ -13,6 +13,7 @@ import { InitSchema1793106343582 } from './migrations/1793106343582-InitSchema.j
 import { AddAvailabilityAvailable1793106500000 } from './migrations/1793106500000-AddAvailabilityAvailable.js';
 import { SeedDemoUser1793106400000 } from './migrations/1793106400000-SeedDemoUser.js';
 import { AddUserPasswordChangedAt1793196619708 } from './migrations/1793196619708-AddUserPasswordChangedAt.js';
+import { RenameReservationStatuses1793300000000 } from './migrations/1793300000000-RenameReservationStatuses.js';
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
@@ -38,6 +39,7 @@ export const dataSourceOptions: DataSourceOptions = {
     SeedDemoUser1793106400000,
     AddAvailabilityAvailable1793106500000,
     AddUserPasswordChangedAt1793196619708,
+    RenameReservationStatuses1793300000000,
   ],
   synchronize: false,
   logging: process.env.DB_LOGGING === 'true',
