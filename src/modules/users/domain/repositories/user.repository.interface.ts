@@ -26,7 +26,7 @@ export interface IUserRepository {
     previous: string,
     next: string,
   ): Promise<void>;
-  /** Writes password hash and change date only: never role or profile. */
+  /** Writes password hash, change date, token version only: never role or profile. */
   savePassword(user: User): Promise<void>;
   delete(id: string): Promise<boolean>;
   findPage(filter: UserListFilter): Promise<UserPage>;

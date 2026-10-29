@@ -67,6 +67,7 @@ export class TypeOrmUserRepository implements IUserRepository {
     await this.rows.update(user.id, {
       passwordHash: user.passwordHash,
       passwordChangedAt: user.passwordChangedAt ?? null,
+      tokenVersion: user.tokenVersion,
     });
   }
 
