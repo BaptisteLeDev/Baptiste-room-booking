@@ -1,7 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
+import { ReservationEntity } from '../src/modules/reservations/infra/reservation.entity.js';
+import { UserEntity } from '../src/modules/users/infra/user.entity.js';
 import { AvailabilityEntity } from '../src/modules/rooms/infra/availability.entity.js';
 import { RoomEntity } from '../src/modules/rooms/infra/room.entity.js';
 import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
@@ -174,6 +177,143 @@ describe('GraphQL read API (e2e)', () => {
       }[];
       expect(rooms.map((r) => r.availabilities.length)).toEqual([2, 2, 2]);
       expect(sql.filter((q) => q.includes('availabilities'))).toHaveLength(1);
+    });
+  });
+
+  describe('Room.reservations', () => {
+    const DASHBOARD = `query GetManagerDashboard($roomId: ID!) {
+      room(id: $roomId) {
+        name
+        capacity
+        availabilities { startAt endAt }
+        reservations(status: PENDING_PAYMENT) {
+          id
+          startAt
+          endAt
+          totalAmount
+          status
+        }
+      }
+    }`;
+    const CLIENT_EMAIL = 'client@example.com';
+    let roomA: string;
+    let roomB: string;
+
+    const slot = (day: string) => ({
+      startTime: new Date(`${day}T09:00:00Z`),
+      endTime: new Date(`${day}T11:00:00Z`),
+    });
+
+    beforeEach(async () => {
+      const client = await seed.getRepository(UserEntity).save({
+        email: CLIENT_EMAIL,
+        passwordHash: 'x',
+        firstName: 'Cli',
+        lastName: 'Ent',
+        role: 'CLIENT',
+      });
+      roomA = (await saveRoom({ name: 'Salle A' })).id;
+      roomB = (await saveRoom({ name: 'Salle B' })).id;
+      await seed
+        .getRepository(AvailabilityEntity)
+        .insert(
+          [roomA, roomB].map((roomId) => ({ roomId, ...slot('2099-11-02') })),
+        );
+      await seed.getRepository(ReservationEntity).insert(
+        (
+          [
+            ['2099-11-05', 'PENDING_PAYMENT'],
+            ['2099-11-04', 'PENDING_PAYMENT'],
+            ['2099-11-06', 'CONFIRMED'],
+          ] as const
+        ).map(([day, status]) => ({
+          id: randomUUID(),
+          roomId: roomA,
+          userId: client.id,
+          ...slot(day),
+          status,
+          totalAmount: 70,
+          currency: 'EUR',
+          createdAt: new Date(),
+        })),
+      );
+    });
+
+    const pendingStarts = (res: { body: unknown }) =>
+      (
+        body(res).data!.room as { reservations: { startAt: string }[] }
+      ).reservations.map((r) => r.startAt);
+
+    it('manager dashboard returns room, availabilities and pending reservations in one call', async () => {
+      const res = await gql(app, token, DASHBOARD, { roomId: roomA }).expect(
+        200,
+      );
+      expect(body(res).errors).toBeUndefined();
+      expect(body(res).data?.room).toMatchObject({
+        name: 'Salle A',
+        availabilities: [{ startAt: '2099-11-02T09:00:00.000Z' }],
+      });
+      expect(pendingStarts(res)).toEqual([
+        '2099-11-04T09:00:00.000Z',
+        '2099-11-05T09:00:00.000Z',
+      ]);
+    });
+
+    it('reservations is empty for a room without bookings', async () => {
+      const res = await gql(app, token, DASHBOARD, { roomId: roomB }).expect(
+        200,
+      );
+      expect(body(res).errors).toBeUndefined();
+      expect(pendingStarts(res)).toEqual([]);
+    });
+
+    it('client sees room but not its reservations', async () => {
+      const client = await loginAs(app, CLIENT_EMAIL, 'CLIENT');
+      const res = await gql(app, client, DASHBOARD, { roomId: roomA }).expect(
+        200,
+      );
+      const room = body(res).data?.room as Record<string, unknown>;
+      expect(room.name).toBe('Salle A');
+      expect(room.reservations).toBeNull();
+      expect(body(res).errors?.[0].extensions.code).toBe('FORBIDDEN');
+    });
+
+    it('admin sees reservations of any room', async () => {
+      const admin = await loginAs(app, CLIENT_EMAIL, 'ADMINISTRATEUR');
+      const res = await gql(app, admin, DASHBOARD, { roomId: roomA }).expect(
+        200,
+      );
+      expect(body(res).errors).toBeUndefined();
+      expect(pendingStarts(res)).toHaveLength(2);
+    });
+
+    it('two rooms with reservations run one reservation query', async () => {
+      await seed.getRepository(ReservationEntity).insert({
+        id: randomUUID(),
+        roomId: roomB,
+        userId: userFixture.id,
+        ...slot('2099-11-04'),
+        status: 'PENDING_PAYMENT',
+        totalAmount: 70,
+        currency: 'EUR',
+        createdAt: new Date(),
+      });
+      const logQuery = vi.spyOn(seed.logger, 'logQuery');
+      const res = await gql(
+        app,
+        token,
+        '{ searchRooms { reservations(status: PENDING_PAYMENT) { id } } }',
+      ).expect(200);
+      const sql = logQuery.mock.calls.map(([q]) => q);
+      logQuery.mockRestore();
+      expect(body(res).errors).toBeUndefined();
+      const rooms = body(res).data?.searchRooms as {
+        reservations: unknown[];
+      }[];
+      expect(
+        rooms.map((r) => r.reservations.length).sort((x, y) => x - y),
+      ).toEqual([1, 2]);
+      expect(sql.filter((q) => q.includes('"reservations"'))).toHaveLength(1);
     });
   });
 });

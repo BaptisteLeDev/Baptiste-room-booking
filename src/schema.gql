@@ -18,6 +18,24 @@ type Query {
   searchRooms(filter: RoomSearchInput): [Room!]!
 }
 
+type Reservation {
+  currency: String!
+  endAt: DateTime!
+  id: ID!
+  numberOfParticipants: Int
+  startAt: DateTime!
+  status: ReservationStatus!
+  totalAmount: Float!
+}
+
+enum ReservationStatus {
+  CANCELLED
+  COMPLETED
+  CONFIRMED
+  PENDING_PAYMENT
+  REFUSED
+}
+
 type Room {
   availabilities: [Availability!]!
   capacity: Int!
@@ -28,6 +46,7 @@ type Room {
   location: String!
   name: String!
   pricePerHour: Float!
+  reservations(status: ReservationStatus): [Reservation!]
   status: String!
 }
 

@@ -41,6 +41,8 @@ const dev = process.env.NODE_ENV !== 'production';
       sortSchema: true,
       context: ({ req, res }: { req: unknown; res: unknown }) => ({ req, res }),
       playground: false,
+      // field resolvers skip guards, but errors still need REST codes
+      fieldResolverEnhancers: ['filters'],
       introspection: dev,
       plugins: dev ? [ApolloServerPluginLandingPageLocalDefault()] : [],
     }),

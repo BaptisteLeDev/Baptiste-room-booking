@@ -79,6 +79,19 @@ export class TypeOrmReservationRepository implements ReservationRepository {
     return { items: items.map(toReservation), total };
   }
 
+  async findByRooms(
+    roomIds: readonly string[],
+    status?: ReservationStatus,
+  ): Promise<Reservation[]> {
+    const qb = this.rows
+      .createQueryBuilder('res')
+      .where('res.roomId IN (:...roomIds)', { roomIds })
+      .orderBy('res.startTime', 'ASC')
+      .addOrderBy('res.id', 'ASC');
+    if (status) qb.andWhere('res.status = :status', { status });
+    return (await qb.getMany()).map(toReservation);
+  }
+
   async findOverlapping(
     roomId: string,
     slot: TimeSlot,
