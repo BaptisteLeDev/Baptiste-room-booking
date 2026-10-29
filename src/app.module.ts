@@ -9,6 +9,7 @@ import { RoomsModule } from './modules/rooms/rooms.module.js';
 import { ReservationsModule } from './modules/reservations/reservations.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -29,6 +30,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     ReservationsModule,
     UsersModule,
     PaymentsModule,
+    NotificationsModule,
     AdminModule,
   ],
   controllers: [AppController],
