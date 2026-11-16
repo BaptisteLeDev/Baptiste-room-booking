@@ -1,0 +1,52 @@
+# Production stack for Dokploy (Compose service). Secrets: Dokploy "Environment" tab.
+# Domains: attach in Dokploy UI -> frontend:3000 (and backend:8080 only if exposed).
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-resa_db}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-resa_db}
+      JWT_SECRET: ${JWT_SECRET}
+      OBSERVE_APP_KEY: ${OBSERVE_APP_KEY}
+      OBSERVE_APP_SECRET: ${OBSERVE_APP_SECRET}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+    expose:
+      - '8080'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    restart: unless-stopped
+    environment:
+      API_URL: http://backend:8080/api
+      ORIGIN: ${PUBLIC_ORIGIN}
+    expose:
+      - '3000'
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

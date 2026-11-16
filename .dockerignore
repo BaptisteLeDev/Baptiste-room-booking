@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+**/server
+**/tmp
+.git
+**/.env
+.superpowers
+.42c

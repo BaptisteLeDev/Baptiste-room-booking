@@ -20,7 +20,7 @@ describe("api client", () => {
 
 describe("api client outside dev", () => {
   it("throws when API_URL is unset instead of falling back to the mock", () => {
-    vi.stubEnv("DEV", "");
+    vi.stubEnv("DEV", false);
     try {
       expect(() => api(event())).toThrow("API_URL must be set");
     } finally {
