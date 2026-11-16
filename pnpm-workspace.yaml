@@ -4,7 +4,11 @@ packages:
 
 # Scripts d'installation : @scarf/scarf (télémétrie tirée par Prism) est refusé
 allowBuilds:
+  '@apollo/protobufjs': false
   '@parcel/watcher': true
   '@scarf/scarf': false
   esbuild: true
   sharp: false
+
+overrides:
+  multer: '>=2.5.0'

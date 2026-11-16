@@ -10,7 +10,7 @@ import { AvailabilityEntity } from '../modules/rooms/infra/availability.entity.j
 import { ReservationEntity } from '../modules/reservations/infra/reservation.entity.js';
 import { PaymentEntity } from '../modules/payments/infra/payment.entity.js';
 
-const MOCK_DIR = resolve(process.env.SEED_MOCK_DIR ?? '../frontend/mock/data');
+const MOCK_DIR = resolve(process.env.SEED_MOCK_DIR ?? '../../mock/data');
 const SEED_PASSWORD = requiredEnv('SEED_PASSWORD');
 const AVAILABILITY_DAYS = 14;
 

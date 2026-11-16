@@ -52,7 +52,7 @@ $ pnpm db:revert
 $ pnpm db:seed
 ```
 
-Seeded users log in with `SEED_PASSWORD` (required, no default). `SEED_MOCK_DIR` [`../frontend/mock/data`] is resolved from the current directory. Active rooms get 14 days of availability slots from today.
+Seeded users log in with `SEED_PASSWORD` (required, no default). `SEED_MOCK_DIR` [`../../mock/data`] is resolved from the current directory. Active rooms get 14 days of availability slots from today.
 
 Connection env vars, read by `src/database/data-source.ts` (defaults in brackets; `DB_USER` and `DB_PASSWORD` are required, dev values are in `docker-compose.yml`):
 
@@ -116,7 +116,7 @@ query GetManagerDashboard($roomId: ID!) {
 
 ## Brancher le front
 
-Dans `../frontend/apps/frontend/.env.local` :
+Dans `../frontend/.env.local` :
 
 ```bash
 API_URL=http://localhost:8080/api
