@@ -45,6 +45,9 @@ services:
       ORIGIN: ${PUBLIC_ORIGIN}
     expose:
       - '3000'
+    # Tailnet-only VPS: no domain, reached via Tailscale Serve :8448 -> 8229
+    ports:
+      - '8229:3000'
     depends_on:
       - backend
 
