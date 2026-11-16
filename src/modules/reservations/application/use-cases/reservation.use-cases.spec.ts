@@ -32,8 +32,8 @@ const authorization = {
 };
 
 const at = (day: string, a: string, b: string) => ({
-  startAt: `2026-11-${day}T${a}:00:00Z`,
-  endAt: `2026-11-${day}T${b}:00:00Z`,
+  startAt: `2027-11-${day}T${a}:00:00Z`,
+  endAt: `2027-11-${day}T${b}:00:00Z`,
 });
 
 const useCases = () => {
@@ -47,6 +47,7 @@ const useCases = () => {
   const reject = new RejectReservationUseCase(access);
   const list = new ListReservationsUseCase(repo);
   return {
+    repo,
     createReservation: create.execute.bind(create),
     getReservation: get.execute.bind(get),
     updateReservation: update.execute.bind(update),
@@ -69,6 +70,22 @@ describe('reservation use cases', () => {
 
   beforeEach(() => {
     svc = useCases();
+  });
+
+  it('closed slot -> conflict SLOT_UNAVAILABLE', async () => {
+    svc.repo.closed.add('2027-11-02T09:00:00.000Z');
+    const e = await rejection<DomainError>(create('room1', '02', '09', '12'));
+    expect(e.kind).toBe('conflict');
+    expect(e.code).toBe('SLOT_UNAVAILABLE');
+  });
+
+  it('slot-change onto closed slot -> conflict SLOT_UNAVAILABLE', async () => {
+    const a = await create('room1', '02', '09', '12');
+    svc.repo.closed.add('2027-11-02T13:00:00.000Z');
+    const e = await rejection<DomainError>(
+      svc.updateReservation(a.id, 'u1', at('02', '13', '15')),
+    );
+    expect(e.code).toBe('SLOT_UNAVAILABLE');
   });
 
   it('creates PENDING reservation', async () => {
@@ -118,10 +135,10 @@ describe('reservation use cases', () => {
   it('amend own reservation shifted 15 min -> ok', async () => {
     const a = await create('room1', '02', '09', '12');
     const ok = await svc.updateReservation(a.id, 'u1', {
-      startAt: '2026-11-02T09:15:00Z',
-      endAt: '2026-11-02T12:15:00Z',
+      startAt: '2027-11-02T09:15:00Z',
+      endAt: '2027-11-02T12:15:00Z',
     });
-    expect(ok.startAt).toBe('2026-11-02T09:15:00.000Z');
+    expect(ok.startAt).toBe('2027-11-02T09:15:00.000Z');
   });
 
   it('amend CANCELLED onto taken slot -> status conflict first', async () => {
@@ -137,7 +154,7 @@ describe('reservation use cases', () => {
   it('PATCH only endAt earlier than startAt -> invalid', async () => {
     const a = await create('room1', '02', '09', '12');
     const e = await rejection<DomainError>(
-      svc.updateReservation(a.id, 'u1', { endAt: '2026-11-02T08:00:00Z' }),
+      svc.updateReservation(a.id, 'u1', { endAt: '2027-11-02T08:00:00Z' }),
     );
     expect(e.kind).toBe('invalid');
   });
@@ -168,8 +185,8 @@ describe('reservation use cases', () => {
     ).toBe(1);
     const ranged = await svc.listReservations('u1', {
       ...base,
-      from: '2026-11-03',
-      to: '2026-11-04',
+      from: '2027-11-03',
+      to: '2027-11-04',
     });
 
     expect(ranged.total).toBe(2);

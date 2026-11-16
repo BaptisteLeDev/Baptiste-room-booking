@@ -171,6 +171,7 @@ export class TypeOrmRoomRepository implements IRoomRepository {
     slots: AvailabilitySlot[],
   ): Promise<void> {
     await this.dataSource.transaction(async (tx) => {
+      await tx.query('SELECT 1 FROM rooms WHERE id = $1 FOR UPDATE', [roomId]);
       await tx.query(
         `DELETE FROM availabilities
          WHERE room_id = $1 AND (start_time AT TIME ZONE 'Europe/Paris')::date = $2::date`,

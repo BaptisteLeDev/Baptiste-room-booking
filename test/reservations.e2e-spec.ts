@@ -12,7 +12,12 @@ import type {
   Room,
   RoomCreateRequest,
 } from '../src/contract.js';
-import { createTestApp, resetDatabase, loginAs } from './create-app.js';
+import {
+  createTestApp,
+  loginAs,
+  openAvailability,
+  resetDatabase,
+} from './create-app.js';
 
 const UNKNOWN_ID = '7b1e4c2d-5a3f-4d8e-9c6b-1f2a3b4c5d6e';
 
@@ -37,7 +42,9 @@ describe('Reservations routes (e2e)', () => {
       pricePerHour: 45,
     };
     const res = await http().post('/api/rooms').send(body).expect(201);
-    return (res.body as Room).id;
+    const id = (res.body as Room).id;
+    await openAvailability(app, token, id);
+    return id;
   };
 
   const payload = (
@@ -105,6 +112,50 @@ describe('Reservations routes (e2e)', () => {
       .send(payload({ startAt: at(1, 10), endAt: at(1, 11) }))
       .expect(409);
     expect(res.body).toMatchObject({ code: 'SLOT_UNAVAILABLE' });
+  });
+
+  it('POST outside open hours -> 409 SLOT_UNAVAILABLE', async () => {
+    const res = await http()
+      .post('/api/reservations')
+      .send(payload({ startAt: at(1, 19), endAt: at(1, 21) }))
+      .expect(409);
+    expect(res.body).toMatchObject({ code: 'SLOT_UNAVAILABLE' });
+  });
+
+  it('POST on a closed day -> 409 SLOT_UNAVAILABLE', async () => {
+    await http()
+      .put(`/api/rooms/${roomId}/availability`)
+      .send({
+        date: '2026-12-02',
+        slots: [{ startTime: '08:00', endTime: '20:00', available: false }],
+      } satisfies AvailabilityUpdateRequest)
+      .expect(200);
+    const res = await http()
+      .post('/api/reservations')
+      .send(payload({ startAt: at(2, 9), endAt: at(2, 10) }))
+      .expect(409);
+    expect(res.body).toMatchObject({ code: 'SLOT_UNAVAILABLE' });
+  });
+
+  it('closed range inside open hours: booking across it -> 409, before it -> 201', async () => {
+    await http()
+      .put(`/api/rooms/${roomId}/availability`)
+      .send({
+        date: '2026-12-02',
+        slots: [
+          { startTime: '08:00', endTime: '20:00', available: true },
+          { startTime: '12:00', endTime: '13:00', available: false },
+        ],
+      } satisfies AvailabilityUpdateRequest)
+      .expect(200);
+    await http()
+      .post('/api/reservations')
+      .send(payload({ startAt: at(2, 10), endAt: at(2, 13) }))
+      .expect(409);
+    await http()
+      .post('/api/reservations')
+      .send(payload({ startAt: at(2, 8), endAt: at(2, 10) }))
+      .expect(201);
   });
 
   it('POST adjacent slot -> 201', async () => {
@@ -318,6 +369,15 @@ describe('Reservations routes (e2e)', () => {
       startAt: iso(1, 9),
       endAt: iso(1, 12),
     });
+  });
+
+  it('PATCH slot outside open hours -> 409 SLOT_UNAVAILABLE', async () => {
+    const r = await create();
+    const res = await http()
+      .patch(`/api/reservations/${r.id}`)
+      .send({ startAt: at(1, 19), endAt: at(1, 21) })
+      .expect(409);
+    expect(res.body).toMatchObject({ code: 'SLOT_UNAVAILABLE' });
   });
 
   it('PATCH slot overlapping another active reservation -> 409 SLOT_UNAVAILABLE', async () => {

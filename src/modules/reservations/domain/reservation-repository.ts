@@ -27,6 +27,8 @@ export interface ReservationRepository {
     slot: TimeSlot,
     excludeId?: string,
   ): Promise<Reservation | undefined>;
+  /** Open availability covers the slot and no closed range inside it. */
+  isOpen(roomId: string, slot: TimeSlot): Promise<boolean>;
   exclusive<T>(
     roomId: string,
     work: (tx: ReservationRepository) => Promise<T>,

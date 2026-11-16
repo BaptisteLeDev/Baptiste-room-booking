@@ -14,6 +14,8 @@ import type {
 @Injectable()
 export class InMemoryReservationRepository implements ReservationRepository {
   private readonly rows = new Map<string, ReservationSnapshot>();
+  // startAt of closed slots: a slot starting there is not open
+  readonly closed = new Set<string>();
 
   async get(id: string): Promise<Reservation | undefined> {
     const s = this.rows.get(id);
@@ -73,6 +75,10 @@ export class InMemoryReservationRepository implements ReservationRepository {
           o.isActive &&
           o.slot.overlaps(slot),
       );
+  }
+
+  async isOpen(_roomId: string, slot: TimeSlot): Promise<boolean> {
+    return !this.closed.has(slot.startAt);
   }
 
   async exclusive<T>(

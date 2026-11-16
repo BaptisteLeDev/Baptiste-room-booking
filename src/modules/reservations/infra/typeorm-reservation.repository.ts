@@ -3,9 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { paginate } from '../../../common/database/paginate.js';
 import { hasPgCode, PgCode } from '../../../common/database/pg-error.js';
-import { DomainError } from '../../../common/domain-error.js';
 import type { ReservationStatus } from '../domain/enums/reservation-status.enum.js';
-import { statusConflict } from '../domain/exceptions/invalid-state-transition.exception.js';
+import {
+  slotUnavailable,
+  statusConflict,
+} from '../domain/exceptions/invalid-state-transition.exception.js';
 import type { Reservation } from '../domain/reservation.js';
 import type {
   ReservationFilter,
@@ -45,11 +47,7 @@ export class TypeOrmReservationRepository implements ReservationRepository {
       }
     } catch (e) {
       if (hasPgCode(e, PgCode.EXCLUSION_VIOLATION)) {
-        throw new DomainError(
-          'conflict',
-          'SLOT_UNAVAILABLE',
-          "Ce créneau n'est plus disponible.",
-        );
+        throw slotUnavailable();
       }
       throw e;
     }
@@ -90,6 +88,23 @@ export class TypeOrmReservationRepository implements ReservationRepository {
       .addOrderBy('res.id', 'ASC');
     if (status) qb.andWhere('res.status = :status', { status });
     return (await qb.getMany()).map(toReservation);
+  }
+
+  async isOpen(roomId: string, slot: TimeSlot): Promise<boolean> {
+    const [row] = await this.rows.query<{ open: boolean }[]>(
+      `SELECT COALESCE(range_agg(tstzrange(start_time, end_time)) FILTER (WHERE available) @> tstzrange($2, $3), false)
+         AND NOT COALESCE(bool_or(NOT available), false) AS open
+       FROM availabilities
+       WHERE room_id = $1 AND start_time < $3 AND end_time > $2`,
+      [roomId, slot.startAt, slot.endAt],
+    );
+    return row.open;
+  }
+
+  // ponytail: full scan, push filters into SQL when volume grows
+  async list(): Promise<Reservation[]> {
+    const rows = await this.rows.find();
+    return rows.map(toReservation);
   }
 
   async findOverlapping(

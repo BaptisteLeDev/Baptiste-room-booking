@@ -11,7 +11,12 @@ import type {
   User,
 } from '../src/contract.js';
 import { userFixture } from '../src/modules/auth/fixtures/user.fixture.js';
-import { createTestApp, resetDatabase, loginAs } from './create-app.js';
+import {
+  createTestApp,
+  loginAs,
+  openAvailability,
+  resetDatabase,
+} from './create-app.js';
 
 // BOLA / IDOR (OWASP API1): any authenticated user can send any object id.
 // Each route must check ownership on the server. Alice and Bob are both
@@ -79,6 +84,7 @@ describe('Object-level authorization (e2e, BOLA / IDOR)', () => {
       .send(roomBody)
       .expect(201);
     roomId = (room.body as Room).id;
+    await openAvailability(app, manager, roomId);
 
     ({ token: alice, id: aliceId } =
       await registerAndLogin('alice@example.com'));

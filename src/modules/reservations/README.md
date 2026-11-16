@@ -44,6 +44,7 @@ PostgreSQL, table `reservations`, via `TypeOrmReservationRepository` (`Reservati
 - Créneau : début strictement avant la fin, et pas dans le passé (400 `VALIDATION_ERROR`).
 - Participants : au plus la capacité de la salle (400 `VALIDATION_ERROR`).
 - Une réservation active ne chevauche aucune autre réservation active de la même salle (409 `SLOT_UNAVAILABLE`), vérifié sous verrou de la ligne `rooms` (création et changement de créneau) ; la contrainte `no_overlap_active` reste le filet. La sienne propre n'est pas comptée lors d'une modification.
+- Un créneau tient entièrement dans les plages ouvertes (`available`) de la salle et ne touche aucune plage fermée (sinon 409 `SLOT_UNAVAILABLE`), vérifié sous le verrou de la ligne `rooms` ; la fermeture d'une plage prend ce verrou aussi (`replaceAvailability`).
 - Modifier le créneau d'une réservation `CONFIRMED` est refusé (409 `RESERVATION_STATUS_CONFLICT`). Le créneau d'une `PENDING_PAYMENT` change sans changer de statut et recalcule le montant.
 - Seules `PENDING_PAYMENT` et `CONFIRMED` sont modifiables.
 - Commentaire <= 1000 caractères (400 `VALIDATION_ERROR`).
