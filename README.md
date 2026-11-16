@@ -60,14 +60,16 @@ les appels au vrai backend, sans mock. Sans `API_URL`, le front parle au mock Pr
 `frontend` (SSR Qwik). Dans Dokploy : service Compose sur ce dépôt, fichier
 `docker-compose.prod.yml`, variables dans l'onglet Environment :
 
-| Variable                                | Rôle                                                                          |
-| --------------------------------------- | ----------------------------------------------------------------------------- |
-| `DB_USER`, `DB_PASSWORD`, `DB_NAME`     | identifiants PostgreSQL (`DB_NAME` par défaut `resa_db`)                      |
-| `JWT_SECRET`                            | secret de signature des tokens                                                |
-| `OBSERVE_APP_KEY`, `OBSERVE_APP_SECRET` | clés `@nestjs/observe`, obligatoires en production                            |
-| `PUBLIC_ORIGIN`                         | URL publique du front (`https://...`), requise par la protection CSRF de Qwik |
+| Variable                                | Rôle                                                                                                               |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `DB_USER`, `DB_PASSWORD`, `DB_NAME`     | identifiants PostgreSQL (`DB_NAME` par défaut `resa_db`)                                                           |
+| `JWT_SECRET`                            | secret de signature des tokens                                                                                     |
+| `OBSERVE_APP_KEY`, `OBSERVE_APP_SECRET` | clés `@nestjs/observe`, obligatoires en production                                                                 |
+| `PUBLIC_ORIGIN`                         | URL du front vue par le navigateur (`http://localhost:3100` via le tunnel), requise par la protection CSRF de Qwik |
 
-Domaine : à rattacher au service `frontend`, port `3000`. Le backend reste interne.
+Accès privé : le front n'écoute que sur `127.0.0.1:3100` du VPS (`FRONTEND_PORT` pour changer), pas de domaine.
+Depuis ton poste : `ssh -N -L 3100:127.0.0.1:3100 user@vps`, puis http://localhost:3100.
+Passer par `localhost` est obligatoire : le cookie de session est `Secure`, le navigateur ne l'accepte en HTTP que sur localhost.
 
 ## Commandes
 
