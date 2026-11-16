@@ -47,7 +47,7 @@ services:
       - '3000'
     # Tailnet-only VPS: no domain, reached via Tailscale Serve :8448 -> 8229
     ports:
-      - '8229:3000'
+      - '127.0.0.1:8229:3000'
     depends_on:
       - backend
 
