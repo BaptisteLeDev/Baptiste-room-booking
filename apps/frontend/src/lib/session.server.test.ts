@@ -32,7 +32,7 @@ describe("session cookie", () => {
   });
 
   it("is secure outside dev even when the request is plain http", () => {
-    vi.stubEnv("DEV", "");
+    vi.stubEnv("DEV", false);
     try {
       const { cookie, store } = fakeCookie();
       saveToken(cookie, "jwt", 3600);
