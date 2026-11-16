@@ -19,3 +19,10 @@ export const statusConflict = () =>
     'RESERVATION_STATUS_CONFLICT',
     'Statut de la réservation incompatible.',
   );
+
+export const slotUnavailable = () =>
+  new DomainError(
+    'conflict',
+    'SLOT_UNAVAILABLE',
+    "Ce créneau n'est plus disponible.",
+  );

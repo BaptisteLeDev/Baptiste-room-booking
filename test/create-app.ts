@@ -40,6 +40,24 @@ export async function resetDatabase(app: INestApplication<App>): Promise<void> {
 
 export const TEST_PASSWORD = 'password123';
 
+// Bookings need open availability: open the spec days 08:00-20:00 Paris.
+export async function openAvailability(
+  app: INestApplication<App>,
+  token: string,
+  roomId: string,
+): Promise<void> {
+  for (const date of ['2026-12-01', '2026-12-02', '2026-12-05']) {
+    await request(app.getHttpServer())
+      .put(`/api/rooms/${roomId}/availability`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        date,
+        slots: [{ startTime: '08:00', endTime: '20:00', available: true }],
+      })
+      .expect(200);
+  }
+}
+
 export async function loginAs(
   app: INestApplication<App>,
   email = userFixture.email,

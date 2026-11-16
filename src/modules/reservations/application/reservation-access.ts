@@ -1,7 +1,7 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
-import { DomainError } from '../../../common/domain-error.js';
 import { notFound, orNotFound } from '../../../common/not-found.js';
 import { AuthorizationService } from '../../auth/application/authorization.service.js';
+import { slotUnavailable } from '../domain/exceptions/invalid-state-transition.exception.js';
 import type {
   Reservation,
   ReservationSnapshot,
@@ -67,11 +67,6 @@ export async function assertFree(
   slot: TimeSlot,
   selfId?: string,
 ): Promise<void> {
-  if (await repo.findOverlapping(roomId, slot, selfId)) {
-    throw new DomainError(
-      'conflict',
-      'SLOT_UNAVAILABLE',
-      "Ce créneau n'est plus disponible.",
-    );
-  }
+  if (!(await repo.isOpen(roomId, slot))) throw slotUnavailable();
+  if (await repo.findOverlapping(roomId, slot, selfId)) throw slotUnavailable();
 }

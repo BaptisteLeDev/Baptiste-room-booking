@@ -40,6 +40,7 @@ const useCases = () => {
   const reject = new RejectReservationUseCase(access);
   const list = new ListReservationsUseCase(repo);
   return {
+    repo,
     createReservation: create.execute.bind(create),
     getReservation: get.execute.bind(get),
     updateReservation: update.execute.bind(update),
@@ -62,6 +63,22 @@ describe('reservation use cases', () => {
 
   beforeEach(() => {
     svc = useCases();
+  });
+
+  it('closed slot -> conflict SLOT_UNAVAILABLE', async () => {
+    svc.repo.closed.add('2026-11-02T09:00:00.000Z');
+    const e = await rejection<DomainError>(create('room1', '02', '09', '12'));
+    expect(e.kind).toBe('conflict');
+    expect(e.code).toBe('SLOT_UNAVAILABLE');
+  });
+
+  it('slot-change onto closed slot -> conflict SLOT_UNAVAILABLE', async () => {
+    const a = await create('room1', '02', '09', '12');
+    svc.repo.closed.add('2026-11-02T13:00:00.000Z');
+    const e = await rejection<DomainError>(
+      svc.updateReservation(a.id, 'u1', at('02', '13', '15')),
+    );
+    expect(e.code).toBe('SLOT_UNAVAILABLE');
   });
 
   it('creates PENDING reservation', async () => {
