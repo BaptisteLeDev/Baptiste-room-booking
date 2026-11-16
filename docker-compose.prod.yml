@@ -1,5 +1,5 @@
 # Production stack for Dokploy (Compose service). Secrets: Dokploy "Environment" tab.
-# Domains: attach in Dokploy UI -> frontend:3000 (and backend:8080 only if exposed).
+# Access: private, VPS loopback only -> SSH tunnel. Port 3000 = Dokploy UI.
 services:
   db:
     image: postgres:16-alpine
@@ -43,8 +43,8 @@ services:
     environment:
       API_URL: http://backend:8080/api
       ORIGIN: ${PUBLIC_ORIGIN}
-    expose:
-      - '3000'
+    ports:
+      - '127.0.0.1:${FRONTEND_PORT:-3100}:3000'
     depends_on:
       - backend
 
