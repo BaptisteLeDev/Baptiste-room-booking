@@ -1,0 +1,4 @@
+allowBuilds:
+  '@apollo/protobufjs': false
+overrides:
+  multer: '>=2.5.0'
