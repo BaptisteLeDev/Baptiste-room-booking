@@ -1,3 +1,7 @@
 pnpm-lock.yaml
 packages/core/
 mock/.generated/
+apps/backend/src/contract/generated
+apps/backend/src/schema.gql
+apps/*/dist
+apps/frontend/server

@@ -4,7 +4,8 @@ Application de réservation de salles, dans le framework de votre choix. Le code
 
 ## Structure
 
-- `apps/<framework>/` : votre application (créée en séance 1 avec le générateur du méta-framework)
+- `apps/frontend/` : application Qwik City (SSR, adapter `node-server`)
+- `apps/backend/` : API NestJS + PostgreSQL (voir `apps/backend/README.md`)
 - `packages/core/` : copie du dépôt `core`, gérée par `pnpm core:sync` (ne pas modifier ici)
 - `mock/` : mock de l'API servi par Prism, avec un jeu de données (`mock/data/`)
 - `docs/ai-journal.md` : journal d'usage de l'IA, à tenir tout au long du module (livrable évalué)
@@ -47,6 +48,28 @@ pnpm install
 pnpm mock          # API mock sur http://localhost:4010
 pnpm dev           # serveur de dev de l'application (dans un autre terminal)
 ```
+
+### Brancher le vrai backend
+
+Dans `apps/frontend/.env.local` (ignoré par git), `API_URL=http://localhost:8080/api` envoie
+les appels au vrai backend, sans mock. Sans `API_URL`, le front parle au mock Prism.
+
+## Déploiement (Dokploy)
+
+`docker-compose.prod.yml` lance `db` (PostgreSQL), `backend` (migrations puis NestJS) et
+`frontend` (SSR Qwik). Dans Dokploy : service Compose sur ce dépôt, fichier
+`docker-compose.prod.yml`, variables dans l'onglet Environment :
+
+| Variable                                | Rôle                                                                                                               |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `DB_USER`, `DB_PASSWORD`, `DB_NAME`     | identifiants PostgreSQL (`DB_NAME` par défaut `resa_db`)                                                           |
+| `JWT_SECRET`                            | secret de signature des tokens                                                                                     |
+| `OBSERVE_APP_KEY`, `OBSERVE_APP_SECRET` | clés `@nestjs/observe`, obligatoires en production                                                                 |
+| `PUBLIC_ORIGIN`                         | URL du front vue par le navigateur (`http://localhost:3100` via le tunnel), requise par la protection CSRF de Qwik |
+
+Accès privé : le front n'écoute que sur `127.0.0.1:3100` du VPS (`FRONTEND_PORT` pour changer), pas de domaine.
+Depuis ton poste : `ssh -N -L 3100:127.0.0.1:3100 user@vps`, puis http://localhost:3100.
+Passer par `localhost` est obligatoire : le cookie de session est `Secure`, le navigateur ne l'accepte en HTTP que sur localhost.
 
 ## Commandes
 
