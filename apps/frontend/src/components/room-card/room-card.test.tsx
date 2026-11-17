@@ -54,6 +54,7 @@ describe("RoomCard", () => {
     const screen = await renderCard(room);
     const img = screen.querySelector("img");
     expect(img?.getAttribute("alt")).toBe("");
+    expect(img?.getAttribute("class")).toContain("object-cover");
     expect(img?.getAttribute("src")).toBe(room.imageUrl);
     expect(img?.getAttribute("srcset")).toContain("seed/room-01/400/300 400w");
   });

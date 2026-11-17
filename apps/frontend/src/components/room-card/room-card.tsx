@@ -42,7 +42,7 @@ export const RoomPhoto = component$<{
       decoding="async"
       loading={hero || priority ? "eager" : "lazy"}
       fetchPriority={hero || priority ? "high" : "auto"}
-      class={["block", frame]}
+      class={["block object-cover", frame]}
     />
   ) : (
     <div
