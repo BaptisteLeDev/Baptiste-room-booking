@@ -31,9 +31,10 @@ export const onRequest: RequestHandler = async (event) => {
     );
   event.cacheControl({ noCache: true, private: true });
   if (!readToken(event.cookie)) return;
-  const { data } = await getCurrentUser({ client: api(event) });
+  const { data, response } = await getCurrentUser({ client: api(event) });
   if (data) event.sharedMap.set(USER_KEY, data);
-  else clearToken(event.cookie);
+  // Only a real 401 ends the session: 429/5xx must not log the user out.
+  else if (response?.status === 401) clearToken(event.cookie);
 };
 
 export const useCurrentUser = routeLoader$(

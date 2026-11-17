@@ -12,9 +12,14 @@ export function api(event: RequestEventBase): Client {
   if (!baseUrl && !import.meta.env.DEV) {
     throw new Error("API_URL must be set outside dev (mock is dev-only)");
   }
+  // Backend rate-limits per IP (TRUST_PROXY=1): forward the browser IP, else all users share one bucket.
+  const ip = event.clientConn.ip;
   const client = createClient({
     baseUrl: baseUrl ?? MOCK_API_URL,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...(ip && { "X-Forwarded-For": ip }),
+    },
   });
   if (!baseUrl && import.meta.env.DEV) withMock(client, token);
   return client;

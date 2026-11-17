@@ -5,6 +5,7 @@ import { api } from "./client.server";
 const event = (apiUrl?: string) =>
   ({
     cookie: { get: () => null },
+    clientConn: { ip: "203.0.113.7" },
     env: { get: (key: string) => (key === "API_URL" ? apiUrl : undefined) },
   }) as never;
 
