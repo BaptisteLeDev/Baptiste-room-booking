@@ -9,6 +9,7 @@ import { RoomEntity } from '../modules/rooms/infra/room.entity.js';
 import { AvailabilityEntity } from '../modules/rooms/infra/availability.entity.js';
 import { ReservationEntity } from '../modules/reservations/infra/reservation.entity.js';
 import { PaymentEntity } from '../modules/payments/infra/payment.entity.js';
+import { ImageOptimizer } from '../modules/media/image-optimizer.js';
 
 const MOCK_DIR = resolve(process.env.SEED_MOCK_DIR ?? '../../mock/data');
 const SEED_PASSWORD = requiredEnv('SEED_PASSWORD');
@@ -49,6 +50,11 @@ async function seed() {
     passwordHash,
   }));
   const rooms = load<RoomEntity[]>('rooms');
+  // Downloads and converts mock photos once; re-runs reuse MEDIA_DIR.
+  const images = new ImageOptimizer();
+  for (const room of rooms)
+    if (room.imageUrl)
+      room.imageUrl = await images.optimizeFromUrl(room.imageUrl);
   const reservations = load<MockReservation[]>('reservations').map(
     ({ startAt, endAt, ...r }) => ({
       ...r,

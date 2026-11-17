@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module.js';
+import { MediaModule } from '../media/media.module.js';
 import { CreateRoomUseCase } from './application/use-cases/create-room.use-case.js';
 import { DeleteRoomUseCase } from './application/use-cases/delete-room.use-case.js';
 import { GetRoomAvailabilityUseCase } from './application/use-cases/get-room-availability.use-case.js';
@@ -20,6 +21,7 @@ import { RoomsResolver } from './graphql/rooms.resolver.js';
   imports: [
     TypeOrmModule.forFeature([RoomEntity, AvailabilityEntity]),
     AuthModule,
+    MediaModule,
   ],
   controllers: [RoomsController],
   providers: [

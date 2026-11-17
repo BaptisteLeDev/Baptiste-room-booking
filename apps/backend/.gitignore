@@ -45,6 +45,9 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# optimized room images (MEDIA_DIR)
+/media
+
 # temp directory
 .temp
 .tmp

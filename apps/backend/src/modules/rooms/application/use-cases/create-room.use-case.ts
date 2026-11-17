@@ -5,6 +5,7 @@ import type {
   Room as RoomDto,
 } from '../../../../contract.js';
 import { AuthorizationService } from '../../../auth/application/authorization.service.js';
+import { ImageOptimizer } from '../../../media/image-optimizer.js';
 import { Room } from '../../domain/entities/room.entity.js';
 import {
   type IRoomRepository,
@@ -16,10 +17,14 @@ export class CreateRoomUseCase {
   constructor(
     @Inject(ROOM_REPOSITORY) private readonly rooms: IRoomRepository,
     private readonly authorization: AuthorizationService,
+    private readonly images: ImageOptimizer,
   ) {}
 
   async execute(userId: string, body: RoomCreateRequest): Promise<RoomDto> {
     await this.authorization.assertManager(userId);
+    const imageUrl = body.imageUrl
+      ? await this.images.optimizeFromUrl(body.imageUrl)
+      : undefined;
     const room = Room.create({
       id: randomUUID(),
       createdAt: new Date().toISOString(),
@@ -30,7 +35,7 @@ export class CreateRoomUseCase {
       location: body.location,
       equipment: body.equipment ?? [],
       pricePerHour: body.pricePerHour,
-      imageUrl: body.imageUrl,
+      imageUrl,
     });
     return (await this.rooms.save(room)).toSnapshot();
   }

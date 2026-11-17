@@ -20,7 +20,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AdminModule } from './modules/admin/admin.module.js';
 import { envOrDevFallback } from './common/env.js';
 
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
+const { ObserveModule, ObserveInstrument } = createObserveModule();
+export { ObserveInstrument };
 
 // opt-in: a deploy without NODE_ENV must not expose the schema
 const sandbox = process.env.GRAPHQL_SANDBOX === 'true';

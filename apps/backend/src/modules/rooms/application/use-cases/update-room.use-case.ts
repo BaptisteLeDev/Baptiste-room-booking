@@ -9,6 +9,7 @@ import {
   ROOM_REPOSITORY,
 } from '../../domain/repositories/room.repository.interface.js';
 import { orNotFound } from '../../../../common/not-found.js';
+import { ImageOptimizer } from '../../../media/image-optimizer.js';
 import { assertRoomOwnerOrAdmin } from '../room-access.js';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class UpdateRoomUseCase {
   constructor(
     @Inject(ROOM_REPOSITORY) private readonly rooms: IRoomRepository,
     private readonly authorization: AuthorizationService,
+    private readonly images: ImageOptimizer,
   ) {}
 
   async execute(
@@ -25,7 +27,12 @@ export class UpdateRoomUseCase {
   ): Promise<RoomDto> {
     const room = orNotFound(await this.rooms.findById(id));
     await assertRoomOwnerOrAdmin(this.authorization, userId, room.ownerId);
-    room.update(body);
+    room.update({
+      ...body,
+      ...(body.imageUrl && {
+        imageUrl: await this.images.optimizeFromUrl(body.imageUrl),
+      }),
+    });
     return (await this.rooms.save(room)).toSnapshot();
   }
 }
