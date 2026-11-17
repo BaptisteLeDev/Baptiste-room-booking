@@ -23,6 +23,15 @@ describe("navItems", () => {
     expect(items[2].count).toBe(2);
   });
 
+  it("adds the administration link for an administrateur only", () => {
+    expect(
+      navItems({ role: "ADMINISTRATEUR" }, 0).map((i) => i.href),
+    ).toContain("/admin/");
+    expect(
+      navItems({ role: "GESTIONNAIRE" }, 0).map((i) => i.href),
+    ).not.toContain("/admin/");
+  });
+
   it("rejects manager links for a client", () => {
     expect(
       navItems({ role: "CLIENT" }, 0).some((item) =>
