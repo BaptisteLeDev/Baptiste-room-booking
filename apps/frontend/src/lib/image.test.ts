@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resizeImage } from "./image";
+import { resizeImage, roomImageSrcSet } from "./image";
 
 describe("resizeImage", () => {
   it("rewrites trailing dimensions keeping the source ratio", () => {
@@ -28,4 +28,14 @@ describe("resizeImage", () => {
       expect(resizeImage({ src, width: 400, height: undefined })).toBe(src);
     },
   );
+});
+
+describe("roomImageSrcSet", () => {
+  it("lists one WebP per backend-optimized width", () => {
+    expect(
+      roomImageSrcSet("http://localhost:8080/api/media/abc/1200.webp"),
+    ).toBe(
+      "http://localhost:8080/api/media/abc/400.webp 400w, http://localhost:8080/api/media/abc/800.webp 800w, http://localhost:8080/api/media/abc/1200.webp 1200w",
+    );
+  });
 });
