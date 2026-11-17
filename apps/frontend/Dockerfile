@@ -12,8 +12,8 @@ RUN pnpm install --frozen-lockfile --filter @room-booking/frontend... \
 FROM node:24-slim
 ENV NODE_ENV=production PORT=3000
 WORKDIR /app
-# SSR bundle keeps undici external
-RUN npm install --no-save --no-package-lock undici@8.12.4
+# SSR bundle keeps undici and compression external (devDeps, absent from runtime)
+RUN npm install --no-save --no-package-lock undici@8.12.4 compression@1.8.2
 COPY --from=build /app/apps/frontend/dist dist
 COPY --from=build /app/apps/frontend/server server
 USER node
