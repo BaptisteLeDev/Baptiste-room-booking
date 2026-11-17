@@ -10,11 +10,13 @@ RUN pnpm install --frozen-lockfile --filter @room-booking/backend... \
   && cp -r apps/backend/dist /out/dist
 
 FROM node:24-alpine
-ENV NODE_ENV=production PORT=8080
+ENV NODE_ENV=production PORT=8080 SEED_MOCK_DIR=/app/mock/data
 WORKDIR /app
 COPY --from=build --chown=node:node /out ./
+COPY --from=build /app/mock/data ./mock/data
 # GraphQL autoSchemaFile writes src/schema.gql at boot
 RUN mkdir -p src && chown node:node src
 USER node
 EXPOSE 8080
-CMD ["sh", "-c", "node node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js && exec node dist/main.js"]
+# seed is idempotent (upserts), but availability is rebuilt and reservations reset on every boot
+CMD ["sh", "-c", "node node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js && node dist/database/seed.js && exec node dist/main.js"]
