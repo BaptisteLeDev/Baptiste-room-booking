@@ -5,7 +5,7 @@ const PASSWORD_MIN = 8;
 
 const required = (message: string) => z.string().trim().min(1, message);
 
-export const emailSchema = z
+const emailSchema = z
   .string()
   .trim()
   .email("Saisissez une adresse e-mail valide, par exemple nom@domaine.fr");

@@ -58,10 +58,7 @@ const slotClass = [
 
 const swatchClass = "size-4 rounded-(--radius-sm) border";
 
-export const selectionLabel = (
-  slots: AvailabilitySlot[],
-  range: SlotRange | null,
-) =>
+const selectionLabel = (slots: AvailabilitySlot[], range: SlotRange | null) =>
   range
     ? `Sélection : de ${formatTime(slots[range.start].startTime)} à ${formatTime(slots[range.end].endTime)} (${formatHours(rangeMinutes(slots, range))})`
     : "Aucun créneau sélectionné.";
