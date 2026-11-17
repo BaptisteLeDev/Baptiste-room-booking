@@ -1,6 +1,6 @@
 # Contexte Admin
 
-Vues d'administration en lecture seule : liste globale des réservations et statistiques. Contrat : `core/openapi.yml` (`/admin*`).
+Vues d'administration : liste globale des réservations, statistiques, série temporelle par jour et par état. Le changement d'état passe par le contexte Réservations (`POST /reservations/{id}/status`). Contrat : `core/openapi.yml` (`/admin*`, `/reservations/{id}/status`).
 
 ## Langage
 
@@ -13,6 +13,7 @@ Vues d'administration en lecture seule : liste globale des réservations et stat
 ## Frontières
 
 - Ne possède aucune donnée et n'écrit rien.
+- Le changement d'état (débogage admin) appartient au contexte Réservations : seules les transitions du domaine sont acceptées (sinon 409).
 - Lit `reservations` via sa propre vue `AdminReservationRow` (`infra/admin-reservation-row.entity.ts`) et compte `users` et `rooms` en SQL. Aucun import de `*/infra` d'un autre contexte.
 - Le port retourne l'entité `Reservation` du domaine Réservations (import de `reservations/domain`).
 - Chaque use case commence par `AuthorizationService.assertAdmin` : 403 sinon.
@@ -26,6 +27,7 @@ PostgreSQL, tables `reservations` (vue de lecture), `users` et `rooms` (comptage
 - Réservé aux administrateurs : 403 sinon.
 - Statistiques : `from` ne peut pas dépasser `to` (400 `INVALID_DATE_RANGE`). `to` est inclus (jusqu'à la fin du jour).
 - Liste paginée (`page`, `pageSize`), filtrable par `status`, `roomId`, `userId`.
+- Série temporelle : bornes `from`/`to` comme les statistiques, jours en UTC, jours vides omis.
 
 ## ADR
 

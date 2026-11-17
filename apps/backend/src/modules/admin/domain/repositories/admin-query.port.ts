@@ -20,11 +20,18 @@ export type AdminStatistics = {
   totalRevenue: number;
 };
 
+export type TimelineDay = {
+  date: string;
+  total: number;
+  byStatus: Record<ReservationStatus, number>;
+};
+
 export interface AdminQuery {
   listReservations(
     filter: AdminReservationFilter,
   ): Promise<{ items: Reservation[]; total: number }>;
   statistics(filter: StatisticsFilter): Promise<AdminStatistics>;
+  timeline(filter: StatisticsFilter): Promise<TimelineDay[]>;
 }
 
 export const ADMIN_QUERY = Symbol('ADMIN_QUERY');

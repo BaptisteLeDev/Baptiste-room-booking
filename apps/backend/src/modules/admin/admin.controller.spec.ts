@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { AdminController } from './admin.controller.js';
 import { ListAdminReservationsUseCase } from './application/use-cases/list-admin-reservations.use-case.js';
 import { StatisticsUseCase } from './application/use-cases/statistics.use-case.js';
+import { TimelineUseCase } from './application/use-cases/timeline.use-case.js';
 
 describe('AdminController', () => {
   it('is defined', async () => {
@@ -11,6 +12,7 @@ describe('AdminController', () => {
       providers: [
         { provide: ListAdminReservationsUseCase, useValue: {} },
         { provide: StatisticsUseCase, useValue: {} },
+        { provide: TimelineUseCase, useValue: {} },
       ],
     }).compile();
     expect(module.get(AdminController)).toBeDefined();

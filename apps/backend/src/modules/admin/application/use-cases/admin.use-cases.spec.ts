@@ -7,6 +7,7 @@ import { ReservationStatus } from '../../../reservations/domain/enums/reservatio
 import type { AdminQuery } from '../../domain/repositories/admin-query.port.js';
 import { ListAdminReservationsUseCase } from './list-admin-reservations.use-case.js';
 import { StatisticsUseCase } from './statistics.use-case.js';
+import { TimelineUseCase } from './timeline.use-case.js';
 
 const stats = {
   totalUsers: 3,
@@ -31,6 +32,7 @@ const reservation = Reservation.restore({
 const query: AdminQuery = {
   listReservations: async () => ({ items: [reservation], total: 41 }),
   statistics: async () => stats,
+  timeline: async () => [],
 };
 const auth = (admin: boolean) =>
   ({
@@ -79,5 +81,21 @@ describe('StatisticsUseCase', () => {
       .execute('a', { from: '2026-02-01', to: '2026-01-01' })
       .catch((e: unknown) => e);
     expect(err).toBeInstanceOf(DomainError);
+  });
+});
+
+describe('TimelineUseCase', () => {
+  it('rejects non-admin with 403', async () => {
+    const useCase = new TimelineUseCase(query, auth(false));
+    await expect(useCase.execute('u', {})).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+  });
+
+  it('rejects inverted range with 400', async () => {
+    const useCase = new TimelineUseCase(query, auth(true));
+    await expect(
+      useCase.execute('a', { from: '2026-02-01', to: '2026-01-01' }),
+    ).rejects.toBeInstanceOf(DomainError);
   });
 });

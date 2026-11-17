@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Statistics } from '../../../../contract.js';
-import { DomainError } from '../../../../common/domain-error.js';
 import { AuthorizationService } from '../../../auth/application/authorization.service.js';
 import {
   ADMIN_QUERY,
   type AdminQuery,
   type StatisticsFilter,
 } from '../../domain/repositories/admin-query.port.js';
+import { assertDateRange } from '../date-range.js';
 
 @Injectable()
 export class StatisticsUseCase {
@@ -20,13 +20,7 @@ export class StatisticsUseCase {
     filter: StatisticsFilter,
   ): Promise<Statistics> {
     await this.authorization.assertAdmin(requesterId);
-    if (filter.from && filter.to && filter.from > filter.to) {
-      throw new DomainError(
-        'invalid',
-        'INVALID_DATE_RANGE',
-        'La date de début doit précéder la date de fin.',
-      );
-    }
+    assertDateRange(filter);
     return this.query.statistics(filter);
   }
 }

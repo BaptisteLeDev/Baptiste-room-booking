@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { paginate } from '../../../common/database/paginate.js';
+import { ReservationStatus } from '../../reservations/domain/enums/reservation-status.enum.js';
 import {
   Reservation,
   type ReservationSnapshot,
@@ -11,6 +12,7 @@ import type {
   AdminReservationFilter,
   AdminStatistics,
   StatisticsFilter,
+  TimelineDay,
 } from '../domain/repositories/admin-query.port.js';
 import { AdminReservationRow } from './admin-reservation-row.entity.js';
 
@@ -56,14 +58,45 @@ export class TypeOrmAdminQuery implements AdminQuery {
     return { items: items.map(toReservation), total };
   }
 
-  async statistics(filter: StatisticsFilter): Promise<AdminStatistics> {
-    const base = this.reservations.createQueryBuilder('r');
-    if (filter.from)
-      base.andWhere('r.startTime >= :from', { from: filter.from });
+  private inPeriod(filter: StatisticsFilter) {
+    const qb = this.reservations.createQueryBuilder('r');
+    if (filter.from) qb.andWhere('r.startTime >= :from', { from: filter.from });
     if (filter.to)
-      base.andWhere("r.startTime < (CAST(:to AS date) + INTERVAL '1 day')", {
+      qb.andWhere("r.startTime < (CAST(:to AS date) + INTERVAL '1 day')", {
         to: filter.to,
       });
+    return qb;
+  }
+
+  async timeline(filter: StatisticsFilter): Promise<TimelineDay[]> {
+    const day = "TO_CHAR(r.startTime AT TIME ZONE 'UTC', 'YYYY-MM-DD')";
+    const rows = await this.inPeriod(filter)
+      .select(day, 'date')
+      .addSelect('r.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy(day)
+      .addGroupBy('r.status')
+      .getRawMany<{ date: string; status: ReservationStatus; count: string }>();
+    const zero = Object.fromEntries(
+      Object.values(ReservationStatus).map((s) => [s, 0]),
+    ) as Record<ReservationStatus, number>;
+    const days = new Map<string, TimelineDay>();
+    for (const row of rows) {
+      const entry = days.get(row.date) ?? {
+        date: row.date,
+        total: 0,
+        byStatus: { ...zero },
+      };
+      const n = Number(row.count);
+      entry.byStatus[row.status] = n;
+      entry.total += n;
+      days.set(row.date, entry);
+    }
+    return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  async statistics(filter: StatisticsFilter): Promise<AdminStatistics> {
+    const base = this.inPeriod(filter);
     const [totalReservations, confirmedReservations, cancelledReservations] =
       await Promise.all([
         base.clone().getCount(),

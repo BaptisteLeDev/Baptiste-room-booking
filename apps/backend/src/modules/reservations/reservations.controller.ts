@@ -19,10 +19,12 @@ import { CreateReservationUseCase } from './application/use-cases/create-reserva
 import { GetReservationUseCase } from './application/use-cases/get-reservation.use-case.js';
 import { ListReservationsUseCase } from './application/use-cases/list-reservations.use-case.js';
 import { RejectReservationUseCase } from './application/use-cases/reject-reservation.use-case.js';
+import { SetReservationStatusUseCase } from './application/use-cases/set-reservation-status.use-case.js';
 import { UpdateReservationUseCase } from './application/use-cases/update-reservation.use-case.js';
 import { CreateReservationDto } from './dto/create-reservation.dto.js';
 import { ListReservationsQueryDto } from './dto/list-reservations-query.dto.js';
 import { RejectReservationDto } from './dto/reject-reservation.dto.js';
+import { SetReservationStatusDto } from './dto/set-reservation-status.dto.js';
 import { UpdateReservationDto } from './dto/update-reservation.dto.js';
 
 @Controller('reservations')
@@ -35,6 +37,7 @@ export class ReservationsController {
     private readonly cancelUseCase: CancelReservationUseCase,
     private readonly confirmUseCase: ConfirmReservationUseCase,
     private readonly rejectUseCase: RejectReservationUseCase,
+    private readonly setStatusUseCase: SetReservationStatusUseCase,
   ) {}
 
   @Get()
@@ -97,5 +100,15 @@ export class ReservationsController {
     @CurrentUserId() userId: string,
   ): Promise<Reservation> {
     return this.rejectUseCase.execute(reservationId, userId);
+  }
+
+  @Post(':reservationId/status')
+  @HttpCode(HttpStatus.OK)
+  setReservationStatus(
+    @Param('reservationId', ParseUUIDPipe) reservationId: string,
+    @Body() body: SetReservationStatusDto,
+    @CurrentUserId() userId: string,
+  ): Promise<Reservation> {
+    return this.setStatusUseCase.execute(reservationId, userId, body.status);
   }
 }

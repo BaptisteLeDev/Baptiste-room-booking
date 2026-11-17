@@ -7,6 +7,7 @@ import { CreateReservationUseCase } from './application/use-cases/create-reserva
 import { GetReservationUseCase } from './application/use-cases/get-reservation.use-case.js';
 import { ListReservationsUseCase } from './application/use-cases/list-reservations.use-case.js';
 import { RejectReservationUseCase } from './application/use-cases/reject-reservation.use-case.js';
+import { SetReservationStatusUseCase } from './application/use-cases/set-reservation-status.use-case.js';
 import { UpdateReservationUseCase } from './application/use-cases/update-reservation.use-case.js';
 import { RESERVATION_REPOSITORY } from './domain/reservation-repository.js';
 import { ROOM_CATALOG } from './domain/room-catalog.js';
@@ -27,6 +28,7 @@ describe('ReservationsController', () => {
         GetReservationUseCase,
         ListReservationsUseCase,
         RejectReservationUseCase,
+        SetReservationStatusUseCase,
         UpdateReservationUseCase,
         {
           provide: RESERVATION_REPOSITORY,
