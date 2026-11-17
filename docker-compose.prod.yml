@@ -31,6 +31,9 @@ services:
       OBSERVE_APP_KEY: ${OBSERVE_APP_KEY}
       OBSERVE_APP_SECRET: ${OBSERVE_APP_SECRET}
       TRUST_PROXY: ${TRUST_PROXY:-1}
+      MEDIA_DIR: /data/media
+    volumes:
+      - media_data:/data/media
     expose:
       - '8080'
     depends_on:
@@ -52,3 +55,4 @@ services:
 
 volumes:
   db_data:
+  media_data:

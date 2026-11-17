@@ -10,12 +10,12 @@ RUN pnpm install --frozen-lockfile --filter @room-booking/backend... \
   && cp -r apps/backend/dist /out/dist
 
 FROM node:24-alpine
-ENV NODE_ENV=production PORT=8080 SEED_MOCK_DIR=/app/mock/data
+ENV NODE_ENV=production PORT=8080 SEED_MOCK_DIR=/app/mock/data MEDIA_DIR=/data/media
 WORKDIR /app
 COPY --from=build --chown=node:node /out ./
 COPY --from=build /app/mock/data ./mock/data
-# GraphQL autoSchemaFile writes src/schema.gql at boot
-RUN mkdir -p src && chown node:node src
+# GraphQL autoSchemaFile writes src/schema.gql at boot; named volume inherits this owner
+RUN mkdir -p src /data/media && chown node:node src /data/media
 USER node
 EXPOSE 8080
 # seed rewrites users (roles, passwords) and resets reservations: opt-in only, never in prod
