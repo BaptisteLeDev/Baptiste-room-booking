@@ -1,5 +1,6 @@
 # Production image, build context = repo root (see docker-compose.prod.yml)
-FROM node:24-alpine AS build
+# glibc (slim), not alpine: Qwik ships native bindings (qwik.linux-x64-gnu.node) that need ld-linux
+FROM node:24-slim AS build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 WORKDIR /app
@@ -8,7 +9,7 @@ RUN pnpm install --frozen-lockfile --filter @room-booking/frontend... \
   && pnpm --filter @room-booking/frontend build.client \
   && pnpm --filter @room-booking/frontend build.server
 
-FROM node:24-alpine
+FROM node:24-slim
 ENV NODE_ENV=production PORT=3000
 WORKDIR /app
 # SSR bundle keeps undici external
