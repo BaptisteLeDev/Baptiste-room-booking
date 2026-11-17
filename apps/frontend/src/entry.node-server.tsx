@@ -29,13 +29,29 @@ const MEDIA_UPSTREAM = new URL(
   process.env.API_URL ?? "http://localhost:8080/api",
 ).origin;
 
+// Exact shape the backend serves: /api/media/<sha256>/<400|800|1200>.webp
+const MEDIA_PATH = /^\/api\/media\/[a-f0-9]{64}\/(400|800|1200)\.webp$/;
+
 async function proxyMedia(req: IncomingMessage, res: ServerResponse) {
+  const path = new URL(req.url ?? "/", "http://front").pathname;
+  if (!MEDIA_PATH.test(path) || !["GET", "HEAD"].includes(req.method ?? "")) {
+    res.writeHead(404).end();
+    return;
+  }
   try {
-    const upstream = await fetch(`${MEDIA_UPSTREAM}${req.url}`);
+    const upstream = await fetch(`${MEDIA_UPSTREAM}${path}`, {
+      method: req.method,
+      redirect: "manual",
+    });
+    if (upstream.headers.get("content-type") !== "image/webp") {
+      res.writeHead(502).end();
+      return;
+    }
     res.writeHead(upstream.status, {
-      "content-type":
-        upstream.headers.get("content-type") ?? "application/octet-stream",
+      "content-type": "image/webp",
       "cache-control": upstream.headers.get("cache-control") ?? "no-store",
+      "x-content-type-options": "nosniff",
+      "content-security-policy": "default-src 'none'; sandbox",
     });
     res.end(Buffer.from(await upstream.arrayBuffer()));
   } catch {
